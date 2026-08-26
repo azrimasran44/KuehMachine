@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Kueh Machine: The Great Reverse Makan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="game-container"></div>
+
+<!--
+  TODO before zipping for Leonard: switch this to the root-relative path
+  "/shared/account-widget.js" — the full URL below is only for local
+  testing, since this project isn't served from kuehmachine.com yet.
+  Must load before js/main.js (see DATABASE.md).
+-->
+<script src="https://kuehmachine.com/shared/account-widget.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.87.0/dist/phaser.min.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

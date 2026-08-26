@@ -1,0 +1,55 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  font-family: 'Syne', sans-serif;
+  background: #0a0820;
+}
+
+body {
+  height: 100dvh;
+  box-sizing: border-box;
+  /* Safe-area padding lives here, on the canvas's parent, rather than on
+     #game-container itself — Phaser's ENVELOP mode measures its parent's
+     full box to decide how to crop-to-cover, so the padding needs to
+     already be "spent" a level up, or the canvas would render straight
+     under the notch/home-indicator again. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+           env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+#game-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+#game-container canvas {
+  display: block;
+}
+
+/* On an actual phone, full-bleed is correct. On a wide desktop browser
+   window, letting the game's tall/narrow design stretch to cover the
+   whole window is what makes it look "zoomed in" — everything scales up
+   to fill a wide short rectangle. Past phone width, cap it to a mobile-
+   sized column instead of stretching full width. */
+@media (min-width: 481px) {
+  body {
+    display: flex;
+    justify-content: center;
+  }
+
+  #game-container {
+    width: 430px;
+  }
+}
