@@ -75,8 +75,17 @@ export default class GameScene extends Phaser.Scene {
 
     for (let r = 0; r < ROWS; r++) {
       const y = rowToY(r) - TILE / 2;
-      const tint = r === GOAL_ROW ? COLORS.goalLane : (r % 2 === 0 ? COLORS.laneA : COLORS.laneB);
-      this.add.tileSprite(0, y, GAME_WIDTH, TILE, 'tile').setOrigin(0, 0).setTint(tint);
+      const isTrafficLane = r !== GOAL_ROW && r !== ROWS - 1;
+
+      if (isTrafficLane) {
+        // The road texture already reads as asphalt + lane markings on
+        // its own — tinting it the way the plain pavement tile is tinted
+        // would muddy the dashed line's colour, so it's left as-is.
+        this.add.tileSprite(0, y, GAME_WIDTH, TILE, 'road').setOrigin(0, 0);
+      } else {
+        const tint = r === GOAL_ROW ? COLORS.goalLane : COLORS.laneA;
+        this.add.tileSprite(0, y, GAME_WIDTH, TILE, 'tile').setOrigin(0, 0).setTint(tint);
+      }
     }
 
     g.lineStyle(3, COLORS.goalGlow, 0.9);

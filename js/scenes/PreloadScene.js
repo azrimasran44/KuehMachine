@@ -9,6 +9,7 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image('ondehondeh', 'assets/sprites/ondehondeh.png');
     this.load.image('machine', 'assets/sprites/machine.png');
     this.load.image('tile', 'assets/sprites/tile.png');
+    this.load.image('road', 'assets/sprites/road.png');
     this.load.image('car', 'assets/sprites/car.png');
   }
 
