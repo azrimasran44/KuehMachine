@@ -22,7 +22,7 @@ Midnight-in-Singapore palette: deep indigo/navy void-deck night, warm amber-gold
 - [x] Grid-based lane crossing — swipe or keyboard (arrows/WASD), one tile per move
 - [x] Every road is safe to stand on — the danger is live traffic (slow and fast cars, alternating direction per lane), not the lane itself, and traffic gets denser and faster the closer you get to the Machine
 - [x] The kueh monsters aren't roaming hazards — they only appear as the death animation: get hit by a car and one lunges in from behind to finish the job
-- [x] A long route (28 rows) with a scrolling camera — the Machine isn't visible until you've made real progress toward it
+- [x] A long route (28 rows) with a scrolling camera that eases smoothly toward the player rather than snapping — the Machine isn't visible until you've made real progress toward it
 - [x] Win by reaching the Kueh Machine row; instant one-thumb retry after any death
 - [x] True full-screen canvas on phones; capped to a mobile-width column (not stretched full-width) on desktop browsers
 - [x] Pause (manual button + auto-pause when the tab loses focus), with a "3, 2, 1, GO!" countdown before play actually resumes

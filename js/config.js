@@ -49,6 +49,13 @@ export const INITIAL_BUFFER_PX = TILE * 4; // ~4 rows of grace at game start
 export const MAX_BUFFER_PX = TILE * 4; // forward progress can't bank more than this
 export const BUFFER_REFILL_PX = TILE; // one forward row refills this much
 
+// Camera scrollY is eased toward a target each frame rather than ever
+// being written directly — chaining moves quickly recomputes the target
+// several times in a row, and without this the camera would instantly
+// snap to each new value while the player's own tile-glide is still
+// mid-animation, reading as a jarring jump. Higher = snappier/less lag.
+export const CAMERA_SMOOTH = 0.2;
+
 export const COLORS = {
   background: 0x0a0820,
   laneA: 0x1c1650,

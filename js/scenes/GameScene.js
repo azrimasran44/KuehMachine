@@ -3,7 +3,7 @@ import {
   SAFE_TOP, GOAL_ROW, START_COL,
   MOVE_DURATION, COLORS, rowToY, colToX, scrollYForRow,
   MAX_SCROLL_Y, ENVIRONMENT_ADVANCE_SPEED, START_GRACE_MS,
-  INITIAL_BUFFER_PX, MAX_BUFFER_PX, BUFFER_REFILL_PX,
+  INITIAL_BUFFER_PX, MAX_BUFFER_PX, BUFFER_REFILL_PX, CAMERA_SMOOTH,
 } from '../config.js';
 import { InputManager } from '../input.js';
 import { buildCarLanes } from '../level.js';
@@ -38,6 +38,7 @@ export default class GameScene extends Phaser.Scene {
     this.createHud();
 
     this.cameras.main.scrollY = scrollYForRow(this.player.row);
+    this.cameraTargetY = this.cameras.main.scrollY;
 
     this.inputManager.attachKeyboard(this);
     this.inputManager.attachSwipe(this);
@@ -299,9 +300,15 @@ export default class GameScene extends Phaser.Scene {
       }
     }
 
-    this.cameras.main.scrollY = Phaser.Math.Clamp(
-      this.cameras.main.scrollY - ENVIRONMENT_ADVANCE_SPEED * dt,
+    this.cameraTargetY = Phaser.Math.Clamp(
+      this.cameraTargetY - ENVIRONMENT_ADVANCE_SPEED * dt,
       0, MAX_SCROLL_Y,
+    );
+    // Ease toward the target rather than jumping straight to it — the
+    // target itself can move in sudden steps (chained moves each pull it
+    // forward instantly), but the rendered camera always glides.
+    this.cameras.main.scrollY = Phaser.Math.Linear(
+      this.cameras.main.scrollY, this.cameraTargetY, CAMERA_SMOOTH,
     );
 
     // Safety net: scrollY only ever moves forward (the passive tick, plus
@@ -368,9 +375,11 @@ export default class GameScene extends Phaser.Scene {
       this.dismissGraceHint();
     }
 
-    // Moving can only ever pull the camera further forward than wherever
-    // the passive auto-advance has already brought it — never backward.
-    this.cameras.main.scrollY = Math.min(this.cameras.main.scrollY, scrollYForRow(row));
+    // Moving can only ever pull the camera target further forward than
+    // wherever the passive auto-advance has already brought it — never
+    // backward. The rendered camera eases toward this target every frame
+    // in updateEnvironmentAdvance, rather than jumping to it here.
+    this.cameraTargetY = Math.min(this.cameraTargetY, scrollYForRow(row));
     if (row < this.player.row) {
       this.buffer = Math.min(MAX_BUFFER_PX, this.buffer + BUFFER_REFILL_PX);
       this.updateBufferMeter();
