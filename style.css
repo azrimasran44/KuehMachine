@@ -38,18 +38,24 @@ body {
   display: block;
 }
 
-/* On an actual phone, full-bleed is correct. On a wide desktop browser
-   window, letting the game's tall/narrow design stretch to cover the
-   whole window is what makes it look "zoomed in" — everything scales up
-   to fill a wide short rectangle. Past phone width, cap it to a mobile-
-   sized column instead of stretching full width. */
+/* On an actual phone, full-bleed is correct. On desktop, capping only
+   the width (leaving height at 100%) still lets a tall/short browser
+   window force ENVELOP's crop-to-cover into a much bigger scale factor
+   than intended — a tall window makes height the binding constraint,
+   and the whole game gets zoomed in well past what the 430px width cap
+   alone would suggest. Locking the container to the exact design aspect
+   ratio removes that: ENVELOP then has nothing left to crop, so the
+   scale factor is just "fit the box," never a runaway zoom. */
 @media (min-width: 481px) {
   body {
     display: flex;
+    align-items: center;
     justify-content: center;
   }
 
   #game-container {
-    width: 430px;
+    width: min(430px, calc(100dvh * 390 / 844));
+    aspect-ratio: 390 / 844;
+    height: auto;
   }
 }

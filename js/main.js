@@ -1,7 +1,8 @@
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from './config.js';
 import BootScene from './scenes/BootScene.js';
 import PreloadScene from './scenes/PreloadScene.js';
-import MenuScene from './scenes/MenuScene.js';
+import StartScene from './scenes/StartScene.js';
+import StoryScene from './scenes/StoryScene.js';
 import GameScene from './scenes/GameScene.js';
 import PauseScene from './scenes/PauseScene.js';
 import GameOverScene from './scenes/GameOverScene.js';
@@ -21,5 +22,5 @@ new Phaser.Game({
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
   },
-  scene: [BootScene, PreloadScene, MenuScene, GameScene, PauseScene, GameOverScene],
+  scene: [BootScene, PreloadScene, StartScene, StoryScene, GameScene, PauseScene, GameOverScene],
 });

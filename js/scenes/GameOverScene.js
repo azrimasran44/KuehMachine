@@ -7,7 +7,7 @@ const CAR_TAUNTS = [
   'Don’t run! I’m only slightly chewy!',
 ];
 
-const IDLE_TAUNTS = [
+const CAUGHT_TAUNTS = [
   'Standing still? Rude. We were starving.',
   'Dawdling is how dessert happens.',
   'You had one job: keep walking.',
@@ -34,7 +34,7 @@ export default class GameOverScene extends Phaser.Scene {
 
     const subtitle = won
       ? 'The Machine hums quietly. For now.'
-      : Phaser.Utils.Array.GetRandom(cause === 'idle' ? IDLE_TAUNTS : CAR_TAUNTS);
+      : Phaser.Utils.Array.GetRandom(cause === 'caught' ? CAUGHT_TAUNTS : CAR_TAUNTS);
 
     this.add.text(cx, 280, subtitle, {
       fontFamily: 'Syne, sans-serif',
@@ -60,6 +60,6 @@ export default class GameOverScene extends Phaser.Scene {
       fontSize: '13px',
       color: '#8b84b0',
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    menuBtn.on('pointerdown', () => this.scene.start('Menu'));
+    menuBtn.on('pointerdown', () => this.scene.start('Start'));
   }
 }

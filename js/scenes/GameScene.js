@@ -2,8 +2,8 @@ import {
   GAME_WIDTH, GAME_HEIGHT, COLS, ROWS, TILE, WORLD_HEIGHT,
   SAFE_TOP, GOAL_ROW, START_COL,
   MOVE_DURATION, COLORS, rowToY, colToX, scrollYForRow,
-  IDLE_THRESHOLD_MS, CHASE_STEP_MS, CHASE_SPAWN_ROWS_BEHIND,
-  CAMERA_ZOOM_IDLE, CAMERA_ZOOM_LERP,
+  MAX_SCROLL_Y, ENVIRONMENT_ADVANCE_SPEED, START_GRACE_MS,
+  INITIAL_BUFFER_PX, MAX_BUFFER_PX, BUFFER_REFILL_PX,
 } from '../config.js';
 import { InputManager } from '../input.js';
 import { buildCarLanes } from '../level.js';
@@ -25,10 +25,9 @@ export default class GameScene extends Phaser.Scene {
     this.isPaused = false;
     this.score = 0;
     this.cars = [];
-    this.chaser = null;
-    this.zoomTarget = 1;
-    this.hasMoved = false;
     this.inputManager = new InputManager();
+    this.buffer = INITIAL_BUFFER_PX;
+    this.hasMoved = false;
 
     this.cameras.main.setBounds(0, 0, GAME_WIDTH, WORLD_HEIGHT);
 
@@ -39,7 +38,6 @@ export default class GameScene extends Phaser.Scene {
     this.createHud();
 
     this.cameras.main.scrollY = scrollYForRow(this.player.row);
-    this.lastMoveAt = this.time.now;
 
     this.inputManager.attachKeyboard(this);
     this.inputManager.attachSwipe(this);
@@ -59,7 +57,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.gameEnded) return;
 
     if (this.hasMoved) {
-      this.updateIdleChase(time);
+      this.updateEnvironmentAdvance(time, delta);
       if (this.gameEnded) return;
     }
 
@@ -116,7 +114,58 @@ export default class GameScene extends Phaser.Scene {
       color: COLORS.hudGold,
     }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(HUD_DEPTH);
 
+    this.createBufferMeter(HUD_DEPTH);
     this.createPauseButton(HUD_DEPTH);
+    this.createGraceHint(HUD_DEPTH);
+  }
+
+  createBufferMeter(depth) {
+    const width = 100;
+    const height = 6;
+    const x = GAME_WIDTH - 20 - width;
+    const y = SAFE_TOP + 12;
+
+    this.add.rectangle(x, y, width, height, 0x000000, 0.3)
+      .setOrigin(0, 0.5).setScrollFactor(0).setDepth(depth);
+    this.bufferMeterFill = this.add.rectangle(x, y, width, height, COLORS.mint, 1)
+      .setOrigin(0, 0.5).setScrollFactor(0).setDepth(depth);
+    this.bufferMeterWidth = width;
+  }
+
+  updateBufferMeter() {
+    const ratio = Phaser.Math.Clamp(this.buffer / MAX_BUFFER_PX, 0, 1);
+    this.bufferMeterFill.width = this.bufferMeterWidth * ratio;
+    const color = Phaser.Display.Color.Interpolate.ColorWithColor(
+      Phaser.Display.Color.ValueToColor(COLORS.danger),
+      Phaser.Display.Color.ValueToColor(COLORS.mint),
+      100,
+      ratio * 100,
+    );
+    this.bufferMeterFill.setFillStyle(Phaser.Display.Color.GetColor(color.r, color.g, color.b));
+  }
+
+  createGraceHint(depth) {
+    // Stays up until the player actually moves rather than fading on a
+    // fixed timer — nothing else starts happening until then either, so
+    // there's no rush to read it.
+    this.graceHint = this.add.text(GAME_WIDTH / 2, SAFE_TOP + 70, 'SWIPE OR ARROW KEYS TO MOVE', {
+      fontFamily: 'Syne, sans-serif',
+      fontSize: '12px',
+      color: '#cfc9e8',
+      letterSpacing: 1,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0.85);
+  }
+
+  dismissGraceHint() {
+    if (!this.graceHint) return;
+    const hint = this.graceHint;
+    this.graceHint = null;
+    this.tweens.add({
+      targets: hint,
+      alpha: 0,
+      duration: 400,
+      onComplete: () => hint.destroy(),
+    });
   }
 
   createPauseButton(depth) {
@@ -227,69 +276,55 @@ export default class GameScene extends Phaser.Scene {
     return monster;
   }
 
-  // --- idle punish -------------------------------------------------------
+  // --- environment auto-advance -----------------------------------------
+  //
+  // The survival "buffer" is an independent countdown, not something
+  // derived from camera scrollY — scrollY is clamped to [0, MAX_SCROLL_Y]
+  // for legitimate rendering reasons (can't scroll past the world edges)
+  // and would hit that floor partway through a normal run, silently
+  // disabling the danger for the rest of the game. Camera scrollY here is
+  // purely cosmetic: a continuous auto-pan so the environment visibly
+  // advances even when the player doesn't move, independent of whatever
+  // is actually threatening them.
 
-  updateIdleChase(time) {
-    const idleFor = time - this.lastMoveAt;
+  updateEnvironmentAdvance(time, delta) {
+    const dt = delta / 1000;
 
-    if (idleFor > IDLE_THRESHOLD_MS) {
-      if (!this.chaser) this.startChase();
-      const progress = Math.min(1, (idleFor - IDLE_THRESHOLD_MS) / 4000);
-      this.zoomTarget = 1 + progress * (CAMERA_ZOOM_IDLE - 1);
-    } else {
-      this.zoomTarget = 1;
+    if (time - this.gameplayStartAt > START_GRACE_MS) {
+      this.buffer -= ENVIRONMENT_ADVANCE_SPEED * dt;
+      this.updateBufferMeter();
+      if (this.buffer <= 0) {
+        this.triggerCaught();
+        return;
+      }
     }
 
-    const cam = this.cameras.main;
-    cam.zoom += (this.zoomTarget - cam.zoom) * CAMERA_ZOOM_LERP;
+    this.cameras.main.scrollY = Phaser.Math.Clamp(
+      this.cameras.main.scrollY - ENVIRONMENT_ADVANCE_SPEED * dt,
+      0, MAX_SCROLL_Y,
+    );
+
+    // Safety net: scrollY only ever moves forward (the passive tick, plus
+    // tryMovePlayer's forward-only pull), so a player who retreats after
+    // banking forward progress can end up positioned below the visible
+    // viewport while the buffer still has charge left — technically
+    // alive but genuinely invisible. That's a loss regardless of buffer.
+    const viewBottom = this.cameras.main.scrollY + GAME_HEIGHT;
+    if (this.player.container.y - SPRITE_SIZE / 2 > viewBottom) {
+      this.triggerCaught();
+    }
   }
 
-  startChase() {
-    const row = Phaser.Math.Clamp(this.player.row + CHASE_SPAWN_ROWS_BEHIND, 0, ROWS - 1);
-    const sprite = this.spawnDeathMonster(this.player.col, row);
-    this.chaser = { sprite, row };
-    this.stepChase();
-  }
-
-  stepChase() {
-    this.time.delayedCall(CHASE_STEP_MS, () => {
-      if (!this.chaser || this.gameEnded) return;
-      const targetRow = this.chaser.row - 1;
-      this.tweens.add({
-        targets: this.chaser.sprite,
-        y: rowToY(targetRow),
-        duration: CHASE_STEP_MS * 0.8,
-        ease: 'Quad.easeIn',
-        onComplete: () => {
-          if (!this.chaser || this.gameEnded) return;
-          this.chaser.row = targetRow;
-          if (this.chaser.row <= this.player.row) {
-            this.killByChase();
-          } else {
-            this.stepChase();
-          }
-        },
-      });
-    });
-  }
-
-  killByChase() {
+  triggerCaught() {
     this.gameEnded = true;
+    const blackout = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0)
+      .setOrigin(0, 0).setScrollFactor(0).setDepth(2000);
     this.tweens.add({
-      targets: this.chaser.sprite,
-      x: this.player.container.x,
-      y: this.player.container.y,
-      duration: 180,
-      onComplete: () => this.finishLose('idle'),
+      targets: blackout,
+      alpha: 1,
+      duration: 350,
+      onComplete: () => this.finishLose('caught'),
     });
-  }
-
-  cancelChase() {
-    if (this.chaser) {
-      this.chaser.sprite.destroy();
-      this.chaser = null;
-    }
-    this.zoomTarget = 1;
   }
 
   // --- player movement -----------------------------------------------
@@ -323,17 +358,25 @@ export default class GameScene extends Phaser.Scene {
     row = Phaser.Math.Clamp(row, 0, ROWS - 1);
     if (col === this.player.col && row === this.player.row) return;
 
-    this.lastMoveAt = this.time.now;
-    this.hasMoved = true;
-    this.cancelChase();
+    if (!this.hasMoved) {
+      // Nothing auto-advances until the player acts for the first time —
+      // they get unlimited time to see where they are before any
+      // pressure starts. The grace period below then applies from here,
+      // not from scene start.
+      this.hasMoved = true;
+      this.gameplayStartAt = this.time.now;
+      this.dismissGraceHint();
+    }
+
+    // Moving can only ever pull the camera further forward than wherever
+    // the passive auto-advance has already brought it — never backward.
+    this.cameras.main.scrollY = Math.min(this.cameras.main.scrollY, scrollYForRow(row));
+    if (row < this.player.row) {
+      this.buffer = Math.min(MAX_BUFFER_PX, this.buffer + BUFFER_REFILL_PX);
+      this.updateBufferMeter();
+    }
 
     this.moveEntity(this.player, col, row, MOVE_DURATION, () => this.onPlayerMoveComplete());
-    this.tweens.add({
-      targets: this.cameras.main,
-      scrollY: scrollYForRow(row),
-      duration: MOVE_DURATION,
-      ease: 'Quad.easeOut',
-    });
   }
 
   onPlayerMoveComplete() {
@@ -358,8 +401,13 @@ export default class GameScene extends Phaser.Scene {
   }
 
   finishLose(cause) {
-    this.cameras.main.shake(200, 0.01);
-    this.cameras.main.flash(200, 255, 77, 109);
+    // The 'caught' death already has its own dedicated visual (the
+    // blackout fade in triggerCaught) — shake/flash on top of a fully
+    // opaque screen would just be a pointless colour blip on black.
+    if (cause !== 'caught') {
+      this.cameras.main.shake(200, 0.01);
+      this.cameras.main.flash(200, 255, 77, 109);
+    }
     reportScore(this.score);
     this.time.delayedCall(450, () => this.scene.start('GameOver', { result: 'lose', score: this.score, cause }));
   }
@@ -373,7 +421,6 @@ export default class GameScene extends Phaser.Scene {
 
   resumeGame() {
     this.isPaused = false;
-    this.lastMoveAt = this.time.now;
     this.scene.resume();
   }
 }

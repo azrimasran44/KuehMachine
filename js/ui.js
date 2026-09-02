@@ -47,4 +47,27 @@ export function createPixelButton(scene, x, y, width, height, label, opts = {}) 
   return container;
 }
 
+// A semi-opaque rounded panel for the story dialogue box — the one place
+// in this project's UI that calls for a soft edge over the illustration
+// behind it, rather than the hard-edged bevel language everything else
+// uses.
+export function createPixelPanel(scene, x, y, width, height, opts = {}) {
+  const {
+    fillColor = 0x0a0820,
+    fillAlpha = 0.85,
+    borderColor = 0xffffff,
+    borderAlpha = 0.18,
+    radius = 12,
+  } = opts;
+
+  const container = scene.add.container(x, y);
+  const g = scene.add.graphics();
+  g.fillStyle(fillColor, fillAlpha);
+  g.fillRoundedRect(-width / 2, -height / 2, width, height, radius);
+  g.lineStyle(2, borderColor, borderAlpha);
+  g.strokeRoundedRect(-width / 2, -height / 2, width, height, radius);
+  container.add(g);
+  return container;
+}
+
 export { PIXEL_FONT };

@@ -37,14 +37,17 @@ export const MAX_SCROLL_Y = Math.max(0, WORLD_HEIGHT - GAME_HEIGHT);
 export const CAR_SPEED_SLOW = 60; // world px / second
 export const CAR_SPEED_FAST = 125;
 
-// Stand still (or dawdle) this long and a kueh monster starts closing in
-// from behind while the camera creeps in on you — matches Crossy Road's
-// "don't just sit there" pressure.
-export const IDLE_THRESHOLD_MS = 3000;
-export const CHASE_STEP_MS = 550; // how often the chaser advances one row
-export const CHASE_SPAWN_ROWS_BEHIND = 3;
-export const CAMERA_ZOOM_IDLE = 1.16;
-export const CAMERA_ZOOM_LERP = 0.06; // per-frame ease toward the target zoom
+// The environment auto-advances at a steady pace, independent of whether
+// the player moves — a survival buffer drains continuously and only
+// forward progress refills it. This is tracked as its own countdown
+// rather than derived from camera scrollY, because scrollY is clamped to
+// [0, MAX_SCROLL_Y] for legitimate rendering reasons and would hit that
+// floor (and stop threatening the player) partway through every run.
+export const ENVIRONMENT_ADVANCE_SPEED = 55; // px/sec — the one tunable difficulty knob
+export const START_GRACE_MS = 1500; // no drain for the first moment of a run
+export const INITIAL_BUFFER_PX = TILE * 4; // ~4 rows of grace at game start
+export const MAX_BUFFER_PX = TILE * 4; // forward progress can't bank more than this
+export const BUFFER_REFILL_PX = TILE; // one forward row refills this much
 
 export const COLORS = {
   background: 0x0a0820,
