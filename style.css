@@ -16,7 +16,11 @@ html, body {
 }
 
 body {
-  height: 100dvh;
+  /* var(--app-height) is set by an inline script in index.html from
+     window.visualViewport — see the comment there for why dvh alone
+     isn't reliable enough on real mobile browsers. 100dvh is only a
+     fallback for the instant before that script's first run. */
+  height: var(--app-height, 100dvh);
   box-sizing: border-box;
   /* Safe-area padding lives here, on the canvas's parent, rather than on
      #game-container itself — Phaser's ENVELOP mode measures its parent's
@@ -54,7 +58,7 @@ body {
   }
 
   #game-container {
-    width: min(430px, calc(100dvh * 390 / 844));
+    width: min(430px, calc(var(--app-height, 100dvh) * 390 / 844));
     aspect-ratio: 390 / 844;
     height: auto;
   }
