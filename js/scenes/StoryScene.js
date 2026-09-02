@@ -1,6 +1,7 @@
 import { GAME_WIDTH, GAME_HEIGHT, SAFE_TOP, COLORS } from '../config.js';
 import { STORY_PAGES, STORY_BEAT_COUNT } from '../storyData.js';
 import { createPixelButton, createPixelPanel, PIXEL_FONT } from '../ui.js';
+import { fitImageInto } from '../artFit.js';
 
 const ILLUSTRATION_KEYS = {
   lab: 'story_lab',
@@ -11,7 +12,13 @@ const ILLUSTRATION_KEYS = {
   stakes: 'story_stakes',
 };
 
-const ILLUSTRATION_HEIGHT = GAME_HEIGHT * 0.62;
+// The reference illustrations are landscape (~1.3-1.56:1), not the
+// portrait-ish ratio the original pixel-art placeholders were drawn at —
+// forcing them to fill a tall zone would either stretch or crop them
+// heavily, so the zone is sized closer to their actual shape and shown
+// "contain"-fit instead, trading some of the brief's "top ~60-65%"
+// guidance for not distorting or cropping the real art.
+const ILLUSTRATION_HEIGHT = 330;
 
 export default class StoryScene extends Phaser.Scene {
   constructor() {
@@ -30,10 +37,10 @@ export default class StoryScene extends Phaser.Scene {
       .setInteractive()
       .on('pointerdown', () => this.advance());
 
-    this.illustration = this.add.image(GAME_WIDTH / 2, ILLUSTRATION_HEIGHT / 2, ILLUSTRATION_KEYS[STORY_PAGES[0].illustration])
-      .setDisplaySize(GAME_WIDTH, ILLUSTRATION_HEIGHT);
+    this.illustration = null; // created fresh per page — see renderPage()
 
-    this.flashRect = this.add.rectangle(0, 0, GAME_WIDTH, ILLUSTRATION_HEIGHT, 0xffffff, 0).setOrigin(0);
+    this.flashRect = this.add.rectangle(0, 0, GAME_WIDTH, ILLUSTRATION_HEIGHT, 0xffffff, 0)
+      .setOrigin(0).setDepth(10);
 
     const panelH = GAME_HEIGHT - ILLUSTRATION_HEIGHT;
     const panelY = ILLUSTRATION_HEIGHT + panelH / 2;
@@ -65,7 +72,7 @@ export default class StoryScene extends Phaser.Scene {
       fillColor: 0x2a2450,
       textColor: COLORS.hudCream,
       onClick: () => this.goToGame(),
-    });
+    }).setDepth(10);
 
     this.renderPage();
   }
@@ -76,7 +83,7 @@ export default class StoryScene extends Phaser.Scene {
     const startX = 24;
     const y = SAFE_TOP - 40;
     for (let i = 0; i < STORY_BEAT_COUNT; i++) {
-      this.dots.push(this.add.circle(startX + i * spacing, y, 4, 0xffffff, 0.25));
+      this.dots.push(this.add.circle(startX + i * spacing, y, 4, 0xffffff, 0.25).setDepth(10));
     }
   }
 
@@ -89,9 +96,18 @@ export default class StoryScene extends Phaser.Scene {
   renderPage() {
     const page = STORY_PAGES[this.pageIndex];
     const key = ILLUSTRATION_KEYS[page.illustration];
-    if (this.illustration.texture.key !== key) {
-      this.illustration.setTexture(key);
+
+    // Each illustration has its own native aspect ratio, so the fit
+    // scale has to be recomputed per image rather than reusing one
+    // image object's cached scale — simplest correct way is to just
+    // swap the image out each time a new one is needed.
+    if (!this.illustration || this.illustration.texture.key !== key) {
+      if (this.illustration) this.illustration.destroy();
+      this.illustration = fitImageInto(this, key, GAME_WIDTH / 2, ILLUSTRATION_HEIGHT / 2, GAME_WIDTH, ILLUSTRATION_HEIGHT);
+      this.illustration.setDepth(1);
+      this.flashRect.setDepth(10);
     }
+
     this.dialogueText.setText(page.lines.join('\n'));
     this.updateProgressDots(page.beatIndex);
 
