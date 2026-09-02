@@ -1,24 +1,18 @@
-import { GAME_WIDTH, GAME_HEIGHT, SAFE_TOP, COLORS } from '../config.js';
+import { GAME_WIDTH, GAME_HEIGHT, SAFE_TOP, SAFE_BOTTOM, COLORS } from '../config.js';
 import { STORY_PAGES, STORY_BEAT_COUNT } from '../storyData.js';
-import { createPixelButton, createPixelPanel, PIXEL_FONT } from '../ui.js';
-import { fitImageInto } from '../artFit.js';
+import { createPixelButton, PIXEL_FONT } from '../ui.js';
 
-const ILLUSTRATION_KEYS = {
-  lab: 'story_lab',
-  machine: 'story_machine',
-  storm: 'story_storm',
-  strike: 'story_strike',
-  monsters: 'story_monsters',
-  stakes: 'story_stakes',
-};
-
-// The reference illustrations are landscape (~1.3-1.56:1), not the
-// portrait-ish ratio the original pixel-art placeholders were drawn at —
-// forcing them to fill a tall zone would either stretch or crop them
-// heavily, so the zone is sized closer to their actual shape and shown
-// "contain"-fit instead, trading some of the brief's "top ~60-65%"
-// guidance for not distorting or cropping the real art.
-const ILLUSTRATION_HEIGHT = 330;
+// The beat illustrations are full-span, screen-filling art (853x1844,
+// matching our 390:844 design ratio almost exactly) — a Pokemon-style
+// dialogue box overlays the bottom of the image directly rather than
+// splitting the screen into separate illustration/dialogue zones.
+// Fixed position and size across all 6 beats so it never jumps around.
+const TEXTBOX_WIDTH = GAME_WIDTH - 32;
+const TEXTBOX_HEIGHT = 170;
+const TEXTBOX_CENTER_X = GAME_WIDTH / 2;
+const TEXTBOX_CENTER_Y = SAFE_BOTTOM - TEXTBOX_HEIGHT / 2; // bottom edge sits on the safe-area boundary
+const TEXTBOX_BORDER = 12; // native px margin baked into textbox.png, for 9-slice corners
+const TEXTBOX_PADDING_X = 24;
 
 export default class StoryScene extends Phaser.Scene {
   constructor() {
@@ -37,29 +31,39 @@ export default class StoryScene extends Phaser.Scene {
       .setInteractive()
       .on('pointerdown', () => this.advance());
 
-    this.illustration = null; // created fresh per page — see renderPage()
+    this.illustration = null; // full-span background — swapped per beat, see renderPage()
 
-    this.flashRect = this.add.rectangle(0, 0, GAME_WIDTH, ILLUSTRATION_HEIGHT, 0xffffff, 0)
-      .setOrigin(0).setDepth(10);
+    this.flashRect = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0xffffff, 0)
+      .setOrigin(0).setDepth(4);
 
-    const panelH = GAME_HEIGHT - ILLUSTRATION_HEIGHT;
-    const panelY = ILLUSTRATION_HEIGHT + panelH / 2;
-    createPixelPanel(this, GAME_WIDTH / 2, panelY, GAME_WIDTH - 24, panelH - 16);
+    // The textbox itself is one persistent, shared instance — created
+    // once here, never recreated per page — so future style or copy
+    // changes only ever happen in one place, and position/size can't
+    // drift between beats.
+    this.add.nineslice(
+      TEXTBOX_CENTER_X, TEXTBOX_CENTER_Y, 'textbox', null,
+      TEXTBOX_WIDTH, TEXTBOX_HEIGHT,
+      TEXTBOX_BORDER, TEXTBOX_BORDER, TEXTBOX_BORDER, TEXTBOX_BORDER,
+    ).setDepth(5);
 
-    this.dialogueText = this.add.text(GAME_WIDTH / 2, panelY - 14, '', {
+    this.dialogueText = this.add.text(TEXTBOX_CENTER_X, TEXTBOX_CENTER_Y, '', {
       fontFamily: 'Syne, sans-serif',
-      fontSize: '17px',
+      fontSize: '18px',
       color: COLORS.hudCream,
       align: 'center',
-      wordWrap: { width: GAME_WIDTH - 64 },
-      lineSpacing: 6,
-    }).setOrigin(0.5);
+      wordWrap: { width: TEXTBOX_WIDTH - TEXTBOX_PADDING_X * 2 },
+      lineSpacing: 8,
+    }).setOrigin(0.5).setDepth(6);
 
-    this.advanceIndicator = this.add.text(GAME_WIDTH - 34, GAME_HEIGHT - 26, '▼', {
-      fontFamily: PIXEL_FONT,
-      fontSize: '18px',
-      color: COLORS.hudGold,
-    }).setOrigin(0.5);
+    this.advanceIndicator = this.add.text(
+      TEXTBOX_CENTER_X + TEXTBOX_WIDTH / 2 - 22,
+      TEXTBOX_CENTER_Y + TEXTBOX_HEIGHT / 2 - 22,
+      '▼', {
+        fontFamily: PIXEL_FONT,
+        fontSize: '18px',
+        color: COLORS.hudGold,
+      },
+    ).setOrigin(0.5).setDepth(6);
     this.tweens.add({ targets: this.advanceIndicator, y: '+=6', duration: 500, yoyo: true, repeat: -1 });
 
     this.createProgressDots();
@@ -95,17 +99,16 @@ export default class StoryScene extends Phaser.Scene {
 
   renderPage() {
     const page = STORY_PAGES[this.pageIndex];
-    const key = ILLUSTRATION_KEYS[page.illustration];
+    const key = page.illustration;
 
-    // Each illustration has its own native aspect ratio, so the fit
-    // scale has to be recomputed per image rather than reusing one
-    // image object's cached scale — simplest correct way is to just
-    // swap the image out each time a new one is needed.
+    // The reference art is already composed at (almost exactly) our
+    // design ratio, so it fills the whole screen directly — no fit/crop
+    // math needed, unlike the earlier landscape story crops.
     if (!this.illustration || this.illustration.texture.key !== key) {
       if (this.illustration) this.illustration.destroy();
-      this.illustration = fitImageInto(this, key, GAME_WIDTH / 2, ILLUSTRATION_HEIGHT / 2, GAME_WIDTH, ILLUSTRATION_HEIGHT);
-      this.illustration.setDepth(1);
-      this.flashRect.setDepth(10);
+      this.illustration = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, key)
+        .setDisplaySize(GAME_WIDTH, GAME_HEIGHT)
+        .setDepth(0);
     }
 
     this.dialogueText.setText(page.lines.join('\n'));

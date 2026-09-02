@@ -13,12 +13,13 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image('car', 'assets/sprites/car.png');
 
     this.load.image('bg_office_night', 'assets/sprites/bg_office_night.png');
-    this.load.image('story_lab', 'assets/sprites/story_lab.png');
-    this.load.image('story_machine', 'assets/sprites/story_machine.png');
-    this.load.image('story_storm', 'assets/sprites/story_storm.png');
-    this.load.image('story_strike', 'assets/sprites/story_strike.png');
-    this.load.image('story_monsters', 'assets/sprites/story_monsters.png');
-    this.load.image('story_stakes', 'assets/sprites/story_stakes.png');
+    this.load.image('beat1', 'assets/sprites/beat1.png');
+    this.load.image('beat2', 'assets/sprites/beat2.png');
+    this.load.image('beat3', 'assets/sprites/beat3.png');
+    this.load.image('beat4', 'assets/sprites/beat4.png');
+    this.load.image('beat5', 'assets/sprites/beat5.png');
+    this.load.image('beat6', 'assets/sprites/beat6.png');
+    this.load.image('textbox', 'assets/sprites/textbox.png');
   }
 
   create() {
