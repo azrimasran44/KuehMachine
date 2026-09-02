@@ -324,6 +324,10 @@ export default class GameScene extends Phaser.Scene {
 
   triggerCaught() {
     this.gameEnded = true;
+    // A subtle jolt right as the catch registers — gentler than the
+    // car-collision shake, since this death is otherwise just a silent
+    // fade with no other feedback that anything happened.
+    this.cameras.main.shake(180, 0.006);
     const blackout = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0)
       .setOrigin(0, 0).setScrollFactor(0).setDepth(2000);
     this.tweens.add({
