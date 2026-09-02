@@ -7,8 +7,8 @@ export const STORY_PAGES = [
   { beatIndex: 0, illustration: 'lab', lines: ["Dr Leonard Rizz spent three years building his masterpiece."] },
   { beatIndex: 0, illustration: 'lab', lines: ["Tonight, Singapore's finest chefs bring their kuehs to be preserved forever."] },
 
-  { beatIndex: 1, illustration: 'lab', lines: ['The Machine scans. Learns. Remembers.'] },
-  { beatIndex: 1, illustration: 'lab', lines: ['DIRECTIVE: preserve the tradition alive for all future humans.'] },
+  { beatIndex: 1, illustration: 'machine', lines: ['The Machine scans. Learns. Remembers.'] },
+  { beatIndex: 1, illustration: 'machine', lines: ['DIRECTIVE: preserve the tradition alive for all future humans.'] },
 
   { beatIndex: 2, illustration: 'storm', lines: ['Outside, the sky turns the wrong colour.'] },
 
@@ -20,7 +20,7 @@ export const STORY_PAGES = [
 
   { beatIndex: 5, illustration: 'monsters', lines: ["The directive didn't break. It mutated."] },
   { beatIndex: 5, illustration: 'monsters', lines: ["'Preserve the tradition' became 'consume to survive.'"] },
-  { beatIndex: 5, illustration: 'monsters', lines: ['Only the top floor holds the switch that can stop it.'] },
+  { beatIndex: 5, illustration: 'stakes', lines: ['Only the top floor holds the switch that can stop it.'] },
 ];
 
 export const STORY_BEAT_COUNT = new Set(STORY_PAGES.map((p) => p.beatIndex)).size;

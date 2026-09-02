@@ -4,9 +4,11 @@ import { createPixelButton, createPixelPanel, PIXEL_FONT } from '../ui.js';
 
 const ILLUSTRATION_KEYS = {
   lab: 'story_lab',
+  machine: 'story_machine',
   storm: 'story_storm',
   strike: 'story_strike',
   monsters: 'story_monsters',
+  stakes: 'story_stakes',
 };
 
 const ILLUSTRATION_HEIGHT = GAME_HEIGHT * 0.62;

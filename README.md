@@ -16,7 +16,7 @@ Midnight-in-Singapore palette: deep indigo/navy void-deck night, warm amber-gold
 ## Features
 
 - [x] Start Screen — a pixel-art office building at night, lightning-struck rooftop Machine, flickering windows, tap anywhere to begin
-- [x] Skippable storyline sequence — 6 story beats across 12 tap-through pages, visual-novel style, with a Skip button visible throughout and progress dots showing how much is left
+- [x] Skippable storyline sequence — 6 story beats across 12 tap-through pages, visual-novel style, each with its own illustration (the lab, a close-up scan, the storm, the lightning strike, the monster reveal, the stairwell to the switch) — with a Skip button visible throughout and progress dots showing how much is left
 - [x] Dr Leonard Rizz — the Machine's own creator, hardcoded as the (for now) only playable character, dropped straight into the building he built once the story ends or is skipped
 - [x] The environment auto-advances independent of the player, Crossy Road-style — a survival buffer drains continuously and only refills when you move toward the Machine, and doesn't start at all until your first move so you always get a clear look at your character before any pressure begins; let it hit zero (or retreat far enough to fall off the bottom of the screen) and the screen shakes and blacks out
 - [x] Grid-based lane crossing — swipe or keyboard (arrows/WASD), one tile per move
