@@ -197,10 +197,6 @@ export default class GameScene extends Phaser.Scene {
     const shadow = this.add.ellipse(0, SPRITE_SIZE * 0.32, SPRITE_SIZE * 0.7, SPRITE_SIZE * 0.28, 0x000000, 0.3);
     const sprite = this.add.image(0, 0, 'player');
     sprite.setDisplaySize(SPRITE_SIZE, SPRITE_SIZE);
-    // Leonard's sprite is now a real cropped photo, not hand-drawn pixel
-    // art — smooth filtering instead of this project's usual nearest-
-    // neighbor scaling, or it scales down with harsh blockiness.
-    sprite.texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
     container.add([shadow, sprite]);
     this.player = { container, col: START_COL, row: ROWS - 1, isMoving: false };
   }

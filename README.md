@@ -11,9 +11,9 @@ This build is the first playable slice: one stage, "HDB Panic," now with a prope
 
 ## Look & feel
 
-Gameplay stays chunky pixel art throughout — deep indigo/navy void-deck night, warm amber-gold HUD text (streetlamp glow), mint-green for the Machine and Ondeh-Ondeh, hot pink-red for Ang Ku Kueh and danger states, hand-built 16×16 nearest-neighbor sprites for traffic, monsters, and the Machine, chunky drop-shadow "pixel-bevel" buttons throughout. Pixelify Sans for titles/HUD/buttons, Syne (the typeface the rest of kuehmachine.com uses) for body copy.
+Gameplay — including Dr Leonard Rizz's own sprite — stays chunky pixel art throughout: deep indigo/navy void-deck night, warm amber-gold HUD text (streetlamp glow), mint-green for the Machine and Ondeh-Ondeh, hot pink-red for Ang Ku Kueh and danger states, hand-built 16×16 nearest-neighbor sprites for the player, traffic, monsters, and the Machine, chunky drop-shadow "pixel-bevel" buttons throughout. Pixelify Sans for titles/HUD/buttons, Syne (the typeface the rest of kuehmachine.com uses) for body copy.
 
-The Start Screen, the story sequence's 6 illustrations, and Dr Leonard Rizz's own sprite are real illustrated reference art (smoothly filtered, not pixel-scaled) rather than pixel art we drew ourselves — a deliberate style contrast between "cinematic" character/story moments and "retro" gameplay, not a mismatch. `assets/sprites/Image for reference.jpg` is the original reference sheet everything here was cropped from.
+The Start Screen and the story sequence's 6 illustrations are the exception — real illustrated reference art (smoothly filtered, not pixel-scaled), cropped directly from `assets/sprites/Image for reference.jpg`. Those onboarding/narrative moments read as "cinematic," everything you actually play stays retro.
 
 ## Features
 
