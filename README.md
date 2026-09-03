@@ -19,7 +19,7 @@ The Start Screen and the story sequence's 6 illustrations are the exception — 
 
 - [x] Start Screen — the actual reference illustration: a lightning-struck rooftop Machine atop a lit office tower at night, tap anywhere to begin
 - [x] Skippable storyline sequence, Pokémon-style — each of the 6 beats is a full-screen illustration with a pixel-art dialogue box (hand-drawn 9-slice frame, not a plain rectangle) overlaid near the bottom, consistent position and size throughout, with a Skip button visible the whole time and progress dots showing how much is left
-- [x] Dr Leonard Rizz — the Machine's own creator, hardcoded as the (for now) only playable character, dropped straight into the building he built once the story ends or is skipped
+- [x] Dr Leonard Rizz — the Machine's own creator, hardcoded as the (for now) only playable character; the moment the story ends or is skipped, he drops in from above the frame and lands on his starting tile with a little impact bounce, controls locked (and immune to traffic) until he's actually down
 - [x] The environment auto-advances independent of the player, Crossy Road-style — a survival buffer drains continuously and only refills when you move toward the Machine, and doesn't start at all until your first move so you always get a clear look at your character before any pressure begins; let it hit zero (or retreat far enough to fall off the bottom of the screen) and the screen shakes and blacks out
 - [x] Grid-based lane crossing — swipe or keyboard (arrows/WASD), one tile per move
 - [x] Every road is safe to stand on — the danger is live traffic (slow and fast cars, alternating direction per lane), not the lane itself, and traffic gets denser and faster the closer you get to the Machine

@@ -43,6 +43,8 @@ export default class GameScene extends Phaser.Scene {
     this.inputManager.attachKeyboard(this);
     this.inputManager.attachSwipe(this);
 
+    this.playerDropIn();
+
     const onBlur = () => this.pauseGame();
     this.game.events.on(Phaser.Core.Events.BLUR, onBlur);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -54,8 +56,14 @@ export default class GameScene extends Phaser.Scene {
     if (this.gameEnded) return;
 
     this.updateCars(delta);
-    this.checkCarCollision();
-    if (this.gameEnded) return;
+    // No collision checking while Leonard's still dropping in — he's
+    // passing straight through lanes he hasn't actually arrived at yet,
+    // and dying before the intro animation even finishes would feel
+    // like a bug, not a loss.
+    if (!this.isLanding) {
+      this.checkCarCollision();
+      if (this.gameEnded) return;
+    }
 
     if (this.hasMoved) {
       this.updateEnvironmentAdvance(time, delta);
@@ -193,12 +201,64 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createPlayer() {
-    const container = this.add.container(colToX(START_COL), rowToY(ROWS - 1));
-    const shadow = this.add.ellipse(0, SPRITE_SIZE * 0.32, SPRITE_SIZE * 0.7, SPRITE_SIZE * 0.28, 0x000000, 0.3);
+    const landingY = rowToY(ROWS - 1);
+    // Starts one full sprite-height above the visible top edge — computed
+    // straight off scrollYForRow rather than the camera's own scrollY
+    // (not assigned until after this runs), so it's off-screen regardless
+    // of call order.
+    const dropStartY = scrollYForRow(ROWS - 1) - SPRITE_SIZE;
+
+    const container = this.add.container(colToX(START_COL), dropStartY);
+    // Starts small and invisible, growing in as he falls — the usual
+    // "shadow anticipates the landing" cue from platformers.
+    const shadow = this.add.ellipse(0, SPRITE_SIZE * 0.32, SPRITE_SIZE * 0.7, SPRITE_SIZE * 0.28, 0x000000, 0.3)
+      .setAlpha(0).setScale(0.4);
     const sprite = this.add.image(0, 0, 'player');
     sprite.setDisplaySize(SPRITE_SIZE, SPRITE_SIZE);
     container.add([shadow, sprite]);
     this.player = { container, col: START_COL, row: ROWS - 1, isMoving: false };
+    this.playerShadow = shadow;
+    this.playerSprite = sprite;
+    this.playerLandingY = landingY;
+  }
+
+  // --- intro drop-in ----------------------------------------------------
+
+  playerDropIn() {
+    this.isLanding = true;
+    this.player.isMoving = true; // reuses the same guard tryMovePlayer already checks
+
+    const DROP_DURATION = 700;
+    this.tweens.add({
+      targets: this.player.container,
+      y: this.playerLandingY,
+      duration: DROP_DURATION,
+      ease: 'Cubic.easeIn', // accelerates like gravity
+      onComplete: () => this.playerLandingImpact(),
+    });
+    this.tweens.add({
+      targets: this.playerShadow,
+      alpha: 0.3,
+      scale: 1,
+      duration: DROP_DURATION,
+      ease: 'Cubic.easeIn',
+    });
+  }
+
+  playerLandingImpact() {
+    this.player.isMoving = false;
+    this.isLanding = false;
+    this.cameras.main.shake(90, 0.004); // a light thud, distinct from the stronger death shakes
+
+    const sprite = this.playerSprite;
+    this.tweens.add({
+      targets: sprite,
+      scaleX: sprite.scaleX * 1.25,
+      scaleY: sprite.scaleY * 0.65,
+      duration: 90,
+      yoyo: true,
+      ease: 'Quad.easeOut',
+    });
   }
 
   // --- traffic ---------------------------------------------------------
