@@ -9,23 +9,23 @@
 // illustration — the illustration key doubles as the texture key
 // directly, no separate lookup table needed.
 export const STORY_PAGES = [
-  { beatIndex: 0, illustration: 'beat1', lines: ["Dr Leonard Rizz spent three years building his masterpiece."] },
-  { beatIndex: 0, illustration: 'beat1', lines: ["Tonight, Singapore's finest chefs bring their kuehs to be preserved forever."] },
+  { beatIndex: 0, illustration: 'beat1', lines: ["Dr Leonard Rizz, from Earth-13, has built something no one's ever seen before — a machine that can preserve a kueh forever."] },
+  { beatIndex: 0, illustration: 'beat1', lines: ["He's invited Singapore's top chefs to bring their most iconic kuehs... to be the first ever preserved."] },
 
-  { beatIndex: 1, illustration: 'beat2', lines: ['The Machine scans. Learns. Remembers.'] },
-  { beatIndex: 1, illustration: 'beat2', lines: ['DIRECTIVE: preserve the tradition alive for all future humans.'] },
+  { beatIndex: 1, illustration: 'beat2', lines: ['"This machine will keep our traditions alive — for all future humans," Dr Leonard announces proudly.'] },
+  { beatIndex: 1, illustration: 'beat2', lines: ['One by one, the chefs place their kuehs onto the scanner.'] },
 
-  { beatIndex: 2, illustration: 'beat3', lines: ['Outside, the sky turns the wrong colour.'] },
+  { beatIndex: 2, illustration: 'beat3', lines: ['Outside, the sky begins to twist into something unnatural.'] },
+  { beatIndex: 2, illustration: 'beat3', lines: ["The chefs exchange nervous glances. Something doesn't feel right."] },
 
-  { beatIndex: 3, illustration: 'beat4', lines: ['The scan is not finished.'] },
-  { beatIndex: 3, illustration: 'beat4', lines: ['Lightning finds the rooftop antenna.'], effect: 'flash' },
+  { beatIndex: 3, illustration: 'beat4', lines: ['A blinding flash — lightning tears through the sky and slams straight into the machine!'], effect: 'flash' },
+  { beatIndex: 3, illustration: 'beat4', lines: ["Sparks fly. The scan… doesn't stop."] },
 
-  { beatIndex: 4, illustration: 'beat5', lines: ['Something changes in the dough.'] },
-  { beatIndex: 4, illustration: 'beat5', lines: ["By the time anyone notices, it's already taller than the room."] },
+  { beatIndex: 4, illustration: 'beat5', lines: ['The kueh on the scanner begins to grow — swelling, twisting, rising to human size.'] },
+  { beatIndex: 4, illustration: 'beat5', lines: ["It's alive. And it's hungry."] },
 
-  { beatIndex: 5, illustration: 'beat6', lines: ["The directive didn't break. It mutated."] },
-  { beatIndex: 5, illustration: 'beat6', lines: ["'Preserve the tradition' became 'consume to survive.'"] },
-  { beatIndex: 5, illustration: 'beat6', lines: ['Only the top floor holds the switch that can stop it.'] },
+  { beatIndex: 5, illustration: 'beat6', lines: ["The lightning corrupted the machine's directive. \"Preserve\" became something else entirely."] },
+  { beatIndex: 5, illustration: 'beat6', lines: ['Every kueh in the building has turned. The only way to stop this is to reach the machine — at the top floor.'] },
 ];
 
 export const STORY_BEAT_COUNT = new Set(STORY_PAGES.map((p) => p.beatIndex)).size;
