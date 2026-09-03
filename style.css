@@ -29,37 +29,38 @@ body {
      under the notch/home-indicator again. */
   padding: env(safe-area-inset-top) env(safe-area-inset-right)
            env(safe-area-inset-bottom) env(safe-area-inset-left);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* ENVELOP crops-to-cover whenever the container's aspect ratio doesn't
+   exactly match the 390x844 design ratio — and on a real phone it often
+   doesn't, especially the instant Safari's address/tab bar shows or
+   hides: that only eats into height, so the visible area briefly goes
+   flatter (relatively wider) than 390:844, and ENVELOP crops the
+   difference straight off the top and bottom. That's what was cropping
+   Dr Leonard and the pause button on real mobile Safari — "full-bleed is
+   correct on a phone" turned out to only hold when the phone's aspect
+   ratio happens to match the design ratio exactly, which the toolbar
+   breaks. Sizing the container to the design ratio, contained within
+   whatever space is actually available (the same trick already proven
+   on desktop, just generalized instead of gated behind a media query —
+   two independent min() expressions, one per axis, is a pure-CSS
+   equivalent of object-fit:contain) means ENVELOP always has an exact
+   match to cover and nothing left to crop. Any leftover space becomes a
+   thin, harmless letterbox bar instead of eating into the game. On a
+   typical phone, at rest, the two ratios are close enough that this bar
+   is invisible — it only appears for the moment the toolbar is
+   animating. */
 #game-container {
   position: relative;
-  width: 100%;
-  height: 100%;
   overflow: hidden;
+  --avail-w: min(430px, 100vw);
+  width: min(var(--avail-w), calc(var(--app-height, 100dvh) * 390 / 844));
+  height: min(var(--app-height, 100dvh), calc(var(--avail-w) * 844 / 390));
 }
 
 #game-container canvas {
   display: block;
-}
-
-/* On an actual phone, full-bleed is correct. On desktop, capping only
-   the width (leaving height at 100%) still lets a tall/short browser
-   window force ENVELOP's crop-to-cover into a much bigger scale factor
-   than intended — a tall window makes height the binding constraint,
-   and the whole game gets zoomed in well past what the 430px width cap
-   alone would suggest. Locking the container to the exact design aspect
-   ratio removes that: ENVELOP then has nothing left to crop, so the
-   scale factor is just "fit the box," never a runaway zoom. */
-@media (min-width: 481px) {
-  body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  #game-container {
-    width: min(430px, calc(var(--app-height, 100dvh) * 390 / 844));
-    aspect-ratio: 390 / 844;
-    height: auto;
-  }
 }
