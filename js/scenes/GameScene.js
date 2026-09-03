@@ -1,18 +1,22 @@
 import {
-  GAME_WIDTH, GAME_HEIGHT, COLS, ROWS, TILE, WORLD_HEIGHT,
+  GAME_WIDTH, GAME_HEIGHT, COLS, TILE, BOARD_TOP,
   SAFE_TOP, GOAL_ROW, START_COL,
-  MOVE_DURATION, COLORS, rowToY, colToX, scrollYForRow,
-  MAX_SCROLL_Y, ENVIRONMENT_ADVANCE_SPEED, START_GRACE_MS,
+  MOVE_DURATION, COLORS, colToX, CAMERA_FOLLOW_Y,
+  ENVIRONMENT_ADVANCE_SPEED, START_GRACE_MS,
   INITIAL_BUFFER_PX, MAX_BUFFER_PX, BUFFER_REFILL_PX, CAMERA_SMOOTH,
 } from '../config.js';
 import { InputManager } from '../input.js';
-import { buildCarLanes } from '../level.js';
+import { LEVELS, getLevelConfig, buildLaneLayout } from '../levels.js';
 import { reportScore } from '../progress.js';
 import { PIXEL_FONT } from '../ui.js';
 
 const SPRITE_SIZE = TILE * 0.8;
 const CAR_WIDTH = TILE * 0.9;
 const CAR_HEIGHT = TILE * 0.55;
+// A humanoid/blob kueh monster forced into a car's wide, flat box would
+// read wrong — live monster-lane hazards get their own, squarer footprint.
+const MONSTER_WIDTH = SPRITE_SIZE * 0.85;
+const MONSTER_HEIGHT = SPRITE_SIZE * 0.85;
 const DEATH_MONSTER_TEXTURES = ['angkukueh', 'ondehondeh'];
 
 export default class GameScene extends Phaser.Scene {
@@ -20,24 +24,32 @@ export default class GameScene extends Phaser.Scene {
     super('Game');
   }
 
-  create() {
+  create(data = {}) {
+    this.level = data.level ?? 1;
+    this.score = data.score ?? 0;
+    this.levelConfig = getLevelConfig(this.level);
+    this.rows = this.levelConfig.rows;
+    this.startRow = this.rows - 1;
+    this.worldHeight = BOARD_TOP + this.rows * TILE + 40;
+    this.maxScrollY = Math.max(0, this.worldHeight - GAME_HEIGHT);
+    this.laneLayout = buildLaneLayout(this.levelConfig);
+
     this.gameEnded = false;
     this.isPaused = false;
-    this.score = 0;
-    this.cars = [];
+    this.hazards = [];
     this.inputManager = new InputManager();
     this.buffer = INITIAL_BUFFER_PX;
     this.hasMoved = false;
 
-    this.cameras.main.setBounds(0, 0, GAME_WIDTH, WORLD_HEIGHT);
+    this.cameras.main.setBounds(0, 0, GAME_WIDTH, this.worldHeight);
 
     this.drawBoard();
     this.createPlayer();
     this.furthestRow = this.player.row;
-    this.setupCarLanes();
+    this.setupHazardLanes();
     this.createHud();
 
-    this.cameras.main.scrollY = scrollYForRow(this.player.row);
+    this.cameras.main.scrollY = this.scrollYForRow(this.player.row);
     this.cameraTargetY = this.cameras.main.scrollY;
 
     this.inputManager.attachKeyboard(this);
@@ -52,16 +64,28 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
+  // Level size varies per level (js/levels.js), so these close over this
+  // instance's own this.rows/this.worldHeight/this.maxScrollY rather than
+  // being bare pure functions off config.js. colToX stays a shared pure
+  // function in config.js — column count never varies per level.
+  rowToY(row) {
+    return BOARD_TOP + row * TILE + TILE / 2;
+  }
+
+  scrollYForRow(row) {
+    return Phaser.Math.Clamp(this.rowToY(row) - CAMERA_FOLLOW_Y, 0, this.maxScrollY);
+  }
+
   update(time, delta) {
     if (this.gameEnded) return;
 
-    this.updateCars(delta);
+    this.updateHazards(delta);
     // No collision checking while Leonard's still dropping in — he's
     // passing straight through lanes he hasn't actually arrived at yet,
     // and dying before the intro animation even finishes would feel
     // like a bug, not a loss.
     if (!this.isLanding) {
-      this.checkCarCollision();
+      this.checkHazardCollision();
       if (this.gameEnded) return;
     }
 
@@ -78,28 +102,49 @@ export default class GameScene extends Phaser.Scene {
 
   drawBoard() {
     const g = this.add.graphics();
-    g.fillStyle(COLORS.background, 1).fillRect(0, 0, GAME_WIDTH, WORLD_HEIGHT);
+    g.fillStyle(COLORS.background, 1).fillRect(0, 0, GAME_WIDTH, this.worldHeight);
 
-    for (let r = 0; r < ROWS; r++) {
-      const y = rowToY(r) - TILE / 2;
-      const isTrafficLane = r !== GOAL_ROW && r !== ROWS - 1;
+    for (let r = 0; r < this.rows; r++) {
+      const y = this.rowToY(r) - TILE / 2;
+      const isGoalOrStart = r === GOAL_ROW || r === this.startRow;
 
-      if (isTrafficLane) {
-        // The road texture already reads as asphalt + lane markings on
-        // its own — tinting it the way the plain pavement tile is tinted
-        // would muddy the dashed line's colour, so it's left as-is.
-        this.add.tileSprite(0, y, GAME_WIDTH, TILE, 'road').setOrigin(0, 0);
+      if (!isGoalOrStart) {
+        // The road/office-floor texture already reads as its own
+        // material — tinting it the way the plain start/goal tile is
+        // tinted would muddy that, so it's left untinted except to mark
+        // a live monster lane (see monsterLaneTint below), the one thing
+        // that needs to read at a glance in Levels 2-3 where every
+        // crossing row shares the same office_tile texture.
+        this.add.tileSprite(0, y, GAME_WIDTH, TILE, this.levelConfig.hazardTexture).setOrigin(0, 0);
+        const lane = this.laneLayout.find((l) => l.row === r);
+        if (lane && lane.type === 'monster') {
+          this.add.rectangle(0, y, GAME_WIDTH, TILE, COLORS.monsterLaneOverlay, 0.14).setOrigin(0, 0);
+        }
       } else {
         const tint = r === GOAL_ROW ? COLORS.goalLane : COLORS.laneA;
-        this.add.tileSprite(0, y, GAME_WIDTH, TILE, 'tile').setOrigin(0, 0).setTint(tint);
+        this.add.tileSprite(0, y, GAME_WIDTH, TILE, this.levelConfig.floorTexture).setOrigin(0, 0).setTint(tint);
       }
     }
 
-    g.lineStyle(3, COLORS.goalGlow, 0.9);
-    g.lineBetween(0, rowToY(GOAL_ROW) + TILE / 2, GAME_WIDTH, rowToY(GOAL_ROW) + TILE / 2);
+    // Static obstacle props (table/chair/plant) — built once here, never
+    // updated per-frame, since they never move.
+    this.laneLayout.forEach((lane) => {
+      if (lane.type !== 'obstacle') return;
+      lane.occupiedCols.forEach((col, idx) => {
+        this.add.image(colToX(col), this.rowToY(lane.row), lane.propTypes[idx])
+          .setDisplaySize(SPRITE_SIZE * 0.85, SPRITE_SIZE * 0.85);
+      });
+    });
+    this.obstacleCells = new Set(
+      this.laneLayout.filter((l) => l.type === 'obstacle')
+        .flatMap((l) => l.occupiedCols.map((col) => `${l.row},${col}`)),
+    );
 
-    const machine = this.add.image(GAME_WIDTH / 2, rowToY(GOAL_ROW), 'machine');
-    machine.setDisplaySize(SPRITE_SIZE * 1.1, SPRITE_SIZE * 1.1);
+    g.lineStyle(3, COLORS.goalGlow, 0.9);
+    g.lineBetween(0, this.rowToY(GOAL_ROW) + TILE / 2, GAME_WIDTH, this.rowToY(GOAL_ROW) + TILE / 2);
+
+    const goal = this.add.image(GAME_WIDTH / 2, this.rowToY(GOAL_ROW), this.levelConfig.goalTexture);
+    goal.setDisplaySize(SPRITE_SIZE * 1.1, SPRITE_SIZE * 1.1);
   }
 
   createHud() {
@@ -117,11 +162,18 @@ export default class GameScene extends Phaser.Scene {
       letterSpacing: 2,
     }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(HUD_DEPTH);
 
-    this.scoreText = this.add.text(20, SAFE_TOP + 12, '0', {
+    this.scoreText = this.add.text(20, SAFE_TOP + 12, `${this.score}`, {
       fontFamily: PIXEL_FONT,
       fontSize: '26px',
       color: COLORS.hudGold,
     }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(HUD_DEPTH);
+
+    this.add.text(GAME_WIDTH - 20, SAFE_TOP - 18, `LEVEL ${this.level}`, {
+      fontFamily: 'Syne, sans-serif',
+      fontSize: '11px',
+      color: '#8b84b0',
+      letterSpacing: 2,
+    }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(HUD_DEPTH);
 
     this.createBufferMeter(HUD_DEPTH);
     this.createPauseButton(HUD_DEPTH);
@@ -201,12 +253,12 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createPlayer() {
-    const landingY = rowToY(ROWS - 1);
+    const landingY = this.rowToY(this.startRow);
     // Starts one full sprite-height above the visible top edge — computed
     // straight off scrollYForRow rather than the camera's own scrollY
     // (not assigned until after this runs), so it's off-screen regardless
     // of call order.
-    const dropStartY = scrollYForRow(ROWS - 1) - SPRITE_SIZE;
+    const dropStartY = this.scrollYForRow(this.startRow) - SPRITE_SIZE;
 
     const container = this.add.container(colToX(START_COL), dropStartY);
     // Starts small and invisible, growing in as he falls — the usual
@@ -216,7 +268,7 @@ export default class GameScene extends Phaser.Scene {
     const sprite = this.add.image(0, 0, 'player');
     sprite.setDisplaySize(SPRITE_SIZE, SPRITE_SIZE);
     container.add([shadow, sprite]);
-    this.player = { container, col: START_COL, row: ROWS - 1, isMoving: false };
+    this.player = { container, col: START_COL, row: this.startRow, isMoving: false };
     this.playerShadow = shadow;
     this.playerSprite = sprite;
     this.playerLandingY = landingY;
@@ -261,14 +313,20 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  // --- traffic ---------------------------------------------------------
+  // --- hazard lanes (cars in Level 1, kueh monsters in Levels 2-3) -----
+  //
+  // A car and a monster are mechanically identical: a horizontally-moving
+  // sprite with a direction, speed, hitbox, and spawn cadence. One engine
+  // drives both — only spawnHazard() branches by lane.type (texture and
+  // footprint), never the per-frame update/collision loops.
 
-  setupCarLanes() {
-    buildCarLanes().forEach((lane) => {
+  setupHazardLanes() {
+    this.laneLayout.forEach((lane) => {
+      if (lane.type === 'obstacle') return; // static — no spawn loop
       const scheduleNext = (delay) => {
         this.time.delayedCall(delay, () => {
           if (this.gameEnded) return;
-          this.spawnCar(lane);
+          this.spawnHazard(lane);
           scheduleNext(lane.spawnGapMs * Phaser.Math.FloatBetween(0.7, 1.3));
         });
       };
@@ -276,46 +334,49 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  spawnCar(lane) {
-    const y = rowToY(lane.row);
-    const startX = lane.dir === 1 ? -CAR_WIDTH : GAME_WIDTH + CAR_WIDTH;
-    const sprite = this.add.image(startX, y, 'car');
-    sprite.setDisplaySize(CAR_WIDTH, CAR_HEIGHT);
+  spawnHazard(lane) {
+    const isTraffic = lane.type === 'traffic';
+    const texture = isTraffic ? 'car' : Phaser.Utils.Array.GetRandom(DEATH_MONSTER_TEXTURES);
+    const w = isTraffic ? CAR_WIDTH : MONSTER_WIDTH;
+    const h = isTraffic ? CAR_HEIGHT : MONSTER_HEIGHT;
+    const y = this.rowToY(lane.row);
+    const startX = lane.dir === 1 ? -w : GAME_WIDTH + w;
+    const sprite = this.add.image(startX, y, texture);
+    sprite.setDisplaySize(w, h);
     sprite.setFlipX(lane.dir === -1);
-    sprite.setTint(lane.isFast ? 0xffb0a8 : 0xbfe8ff);
-    this.cars.push({ sprite, dir: lane.dir, speed: lane.speed });
+    if (isTraffic) sprite.setTint(lane.isFast ? 0xffb0a8 : 0xbfe8ff);
+    this.hazards.push({ sprite, dir: lane.dir, speed: lane.speed, halfW: w * 0.4, halfH: h * 0.4 });
   }
 
-  updateCars(delta) {
+  updateHazards(delta) {
     const dt = delta / 1000;
-    for (let i = this.cars.length - 1; i >= 0; i--) {
-      const car = this.cars[i];
-      car.sprite.x += car.dir * car.speed * dt;
-      const outLeft = car.dir === -1 && car.sprite.x < -CAR_WIDTH;
-      const outRight = car.dir === 1 && car.sprite.x > GAME_WIDTH + CAR_WIDTH;
+    for (let i = this.hazards.length - 1; i >= 0; i--) {
+      const hazard = this.hazards[i];
+      hazard.sprite.x += hazard.dir * hazard.speed * dt;
+      const w = hazard.halfW * 2;
+      const outLeft = hazard.dir === -1 && hazard.sprite.x < -w;
+      const outRight = hazard.dir === 1 && hazard.sprite.x > GAME_WIDTH + w;
       if (outLeft || outRight) {
-        car.sprite.destroy();
-        this.cars.splice(i, 1);
+        hazard.sprite.destroy();
+        this.hazards.splice(i, 1);
       }
     }
   }
 
-  checkCarCollision() {
+  checkHazardCollision() {
     const px = this.player.container.x;
     const py = this.player.container.y;
     const hitHalf = SPRITE_SIZE * 0.32;
 
-    for (const car of this.cars) {
-      const halfW = CAR_WIDTH * 0.4;
-      const halfH = CAR_HEIGHT * 0.4;
-      if (Math.abs(px - car.sprite.x) < halfW + hitHalf && Math.abs(py - car.sprite.y) < halfH + hitHalf) {
-        this.killByCar();
+    for (const hazard of this.hazards) {
+      if (Math.abs(px - hazard.sprite.x) < hazard.halfW + hitHalf && Math.abs(py - hazard.sprite.y) < hazard.halfH + hitHalf) {
+        this.killByHazard();
         return;
       }
     }
   }
 
-  killByCar() {
+  killByHazard() {
     this.gameEnded = true;
     const monsterRow = this.player.row + 1;
     const monster = this.spawnDeathMonster(this.player.col, monsterRow);
@@ -325,13 +386,13 @@ export default class GameScene extends Phaser.Scene {
       y: this.player.container.y,
       duration: 260,
       ease: 'Quad.easeIn',
-      onComplete: () => this.finishLose('car'),
+      onComplete: () => this.finishLose('hazard'),
     });
   }
 
   spawnDeathMonster(col, row) {
     const texture = Phaser.Utils.Array.GetRandom(DEATH_MONSTER_TEXTURES);
-    const monster = this.add.image(colToX(col), rowToY(row), texture);
+    const monster = this.add.image(colToX(col), this.rowToY(row), texture);
     monster.setDisplaySize(SPRITE_SIZE, SPRITE_SIZE);
     monster.setDepth(500);
     return monster;
@@ -340,7 +401,7 @@ export default class GameScene extends Phaser.Scene {
   // --- environment auto-advance -----------------------------------------
   //
   // The survival "buffer" is an independent countdown, not something
-  // derived from camera scrollY — scrollY is clamped to [0, MAX_SCROLL_Y]
+  // derived from camera scrollY — scrollY is clamped to [0, this.maxScrollY]
   // for legitimate rendering reasons (can't scroll past the world edges)
   // and would hit that floor partway through a normal run, silently
   // disabling the danger for the rest of the game. Camera scrollY here is
@@ -362,7 +423,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.cameraTargetY = Phaser.Math.Clamp(
       this.cameraTargetY - ENVIRONMENT_ADVANCE_SPEED * dt,
-      0, MAX_SCROLL_Y,
+      0, this.maxScrollY,
     );
     // Ease toward the target rather than jumping straight to it — the
     // target itself can move in sudden steps (chained moves each pull it
@@ -385,7 +446,7 @@ export default class GameScene extends Phaser.Scene {
   triggerCaught() {
     this.gameEnded = true;
     // A subtle jolt right as the catch registers — gentler than the
-    // car-collision shake, since this death is otherwise just a silent
+    // hazard-collision shake, since this death is otherwise just a silent
     // fade with no other feedback that anything happened.
     this.cameras.main.shake(180, 0.006);
     const blackout = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0)
@@ -405,7 +466,7 @@ export default class GameScene extends Phaser.Scene {
     this.tweens.add({
       targets: entity.container,
       x: colToX(targetCol),
-      y: rowToY(targetRow),
+      y: this.rowToY(targetRow),
       duration,
       ease: 'Quad.easeOut',
       onComplete: () => {
@@ -426,8 +487,9 @@ export default class GameScene extends Phaser.Scene {
     else if (direction === 'right') col += 1;
 
     col = Phaser.Math.Clamp(col, 0, COLS - 1);
-    row = Phaser.Math.Clamp(row, 0, ROWS - 1);
+    row = Phaser.Math.Clamp(row, 0, this.startRow);
     if (col === this.player.col && row === this.player.row) return;
+    if (this.obstacleCells.has(`${row},${col}`)) return; // blocked by furniture — same as a no-op move
 
     if (!this.hasMoved) {
       // Nothing auto-advances until the player acts for the first time —
@@ -443,7 +505,7 @@ export default class GameScene extends Phaser.Scene {
     // wherever the passive auto-advance has already brought it — never
     // backward. The rendered camera eases toward this target every frame
     // in updateEnvironmentAdvance, rather than jumping to it here.
-    this.cameraTargetY = Math.min(this.cameraTargetY, scrollYForRow(row));
+    this.cameraTargetY = Math.min(this.cameraTargetY, this.scrollYForRow(row));
     if (row < this.player.row) {
       this.buffer = Math.min(MAX_BUFFER_PX, this.buffer + BUFFER_REFILL_PX);
       this.updateBufferMeter();
@@ -461,16 +523,22 @@ export default class GameScene extends Phaser.Scene {
       this.scoreText.setText(`${this.score}`);
     }
 
-    if (this.player.row === GOAL_ROW) this.winGame();
+    if (this.player.row === GOAL_ROW) this.reachGoal();
   }
 
   // --- end states ------------------------------------------------------
 
-  winGame() {
+  reachGoal() {
     this.gameEnded = true;
-    this.cameras.main.flash(300, 56, 211, 159);
     reportScore(this.score);
-    this.time.delayedCall(500, () => this.scene.start('GameOver', { result: 'win', score: this.score }));
+    this.cameras.main.flash(300, 56, 211, 159);
+    if (this.level < LEVELS.length) {
+      this.time.delayedCall(500, () =>
+        this.scene.start('LevelIntro', { level: this.level + 1, score: this.score }));
+    } else {
+      this.time.delayedCall(500, () =>
+        this.scene.start('GameOver', { result: 'win', score: this.score }));
+    }
   }
 
   finishLose(cause) {

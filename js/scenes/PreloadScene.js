@@ -11,6 +11,12 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image('tile', 'assets/sprites/tile.png');
     this.load.image('road', 'assets/sprites/road.png');
     this.load.image('car', 'assets/sprites/car.png');
+    this.load.image('lab_building', 'assets/sprites/lab_building.png');
+    this.load.image('staircase', 'assets/sprites/staircase.png');
+    this.load.image('office_tile', 'assets/sprites/office_tile.png');
+    this.load.image('office_table', 'assets/sprites/office_table.png');
+    this.load.image('office_chair', 'assets/sprites/office_chair.png');
+    this.load.image('office_plant', 'assets/sprites/office_plant.png');
 
     this.load.image('bg_office_night', 'assets/sprites/bg_office_night.png');
     this.load.image('beat1', 'assets/sprites/beat1.png');

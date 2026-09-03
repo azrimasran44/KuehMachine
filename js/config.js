@@ -11,16 +11,19 @@ export const TILE = GAME_WIDTH / COLS;
 export const SAFE_TOP = 90;
 export const SAFE_BOTTOM = GAME_HEIGHT - 90;
 
-export const ROWS = 28; // total rows in the level — much taller than one screen
 // World-space padding above the goal row. Needs to clear the fixed HUD
-// bar (see SAFE_TOP below) — otherwise the Machine's big reveal at the
+// bar (see SAFE_TOP below) — otherwise a level's big goal reveal at the
 // end of the route scrolls in right behind the score/pause bar instead
 // of appearing cleanly on the board.
 export const BOARD_TOP = 140;
-export const WORLD_HEIGHT = BOARD_TOP + ROWS * TILE + 40;
 
 export const GOAL_ROW = 0;
-export const START_ROW = ROWS - 1;
+// ROWS/START_ROW/WORLD_HEIGHT/MAX_SCROLL_Y are no longer fixed globals —
+// each level has its own row count (js/levels.js), so GameScene derives
+// these itself per-instance (this.rows/this.startRow/this.worldHeight)
+// and exposes rowToY/scrollYForRow as instance methods closing over
+// them, rather than importing bare functions from here. colToX stays
+// here since column count never varies per level.
 export const START_COL = Math.floor(COLS / 2);
 
 export const MOVE_DURATION = 130;
@@ -30,12 +33,6 @@ export const MOVE_DURATION = 130;
 // clamped at both ends so it pins to the start row at the beginning and
 // to the goal row at the very end instead of over-scrolling past them.
 export const CAMERA_FOLLOW_Y = GAME_HEIGHT * 0.62;
-export const MAX_SCROLL_Y = Math.max(0, WORLD_HEIGHT - GAME_HEIGHT);
-
-// Every crossing row is a road: safe to stand on, dangerous only while a
-// car is actually passing through your tile.
-export const CAR_SPEED_SLOW = 60; // world px / second
-export const CAR_SPEED_FAST = 125;
 
 // The environment auto-advances at a steady pace, independent of whether
 // the player moves — a survival buffer drains continuously and only
@@ -69,16 +66,15 @@ export const COLORS = {
   hudCream: '#fdf6ec',
   danger: '#ff4d6d',
   mint: '#38d39f',
+  // Levels 2-3 render monster lanes and obstacle lanes on the same
+  // office_tile texture (no outdoor "road" equivalent indoors) — this is
+  // laid over monster lanes as a low-alpha overlay (not a multiply-tint,
+  // which would only ever darken an already-dark floor toward black) so
+  // a moving-danger lane reads apart from a static-clutter one at a
+  // glance without losing the floor texture underneath.
+  monsterLaneOverlay: 0xff4d6d,
 };
-
-export function rowToY(row) {
-  return BOARD_TOP + row * TILE + TILE / 2;
-}
 
 export function colToX(col) {
   return col * TILE + TILE / 2;
-}
-
-export function scrollYForRow(row) {
-  return Phaser.Math.Clamp(rowToY(row) - CAMERA_FOLLOW_Y, 0, MAX_SCROLL_Y);
 }

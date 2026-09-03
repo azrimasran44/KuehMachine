@@ -4,6 +4,7 @@ import PreloadScene from './scenes/PreloadScene.js';
 import StartScene from './scenes/StartScene.js';
 import StoryScene from './scenes/StoryScene.js';
 import GameScene from './scenes/GameScene.js';
+import LevelIntroScene from './scenes/LevelIntroScene.js';
 import PauseScene from './scenes/PauseScene.js';
 import GameOverScene from './scenes/GameOverScene.js';
 
@@ -22,5 +23,5 @@ new Phaser.Game({
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
   },
-  scene: [BootScene, PreloadScene, StartScene, StoryScene, GameScene, PauseScene, GameOverScene],
+  scene: [BootScene, PreloadScene, StartScene, StoryScene, GameScene, LevelIntroScene, PauseScene, GameOverScene],
 });

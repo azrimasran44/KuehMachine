@@ -52,7 +52,11 @@ export default class GameOverScene extends Phaser.Scene {
 
     createPixelButton(this, cx, 500, 240, 68, 'RETRY', {
       fontSize: '26px',
-      onClick: () => this.scene.start('Game'),
+      // Explicit {level: 1, score: 0} rather than a bare scene.start('Game')
+      // — Phaser retains a scene's previous start-data when none is passed,
+      // so omitting this would silently resume wherever the run left off
+      // instead of actually restarting from Level 1.
+      onClick: () => this.scene.start('Game', { level: 1, score: 0 }),
     });
 
     const menuBtn = this.add.text(cx, 590, 'BACK TO MENU', {
