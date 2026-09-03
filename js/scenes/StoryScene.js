@@ -68,10 +68,10 @@ export default class StoryScene extends Phaser.Scene {
 
     this.createProgressDots();
 
-    // Sits left of the fixed kuehmachine.com account badge (top-right,
-    // ~52px, independent of our canvas) rather than under it — same
-    // conflict class already resolved once for the in-game pause button.
-    createPixelButton(this, GAME_WIDTH - 155, SAFE_TOP - 40, 80, 40, 'SKIP', {
+    // Bottom-right, floating over the illustration just above the
+    // textbox — right-aligned with the box below it, with a clear gap so
+    // it never touches the box or its own bottom-right advance indicator.
+    createPixelButton(this, GAME_WIDTH - 20 - 40, TEXTBOX_CENTER_Y - TEXTBOX_HEIGHT / 2 - 20 - 20, 80, 40, 'SKIP', {
       fontSize: '14px',
       fillColor: 0x2a2450,
       textColor: COLORS.hudCream,
