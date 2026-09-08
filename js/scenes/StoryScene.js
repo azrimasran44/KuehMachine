@@ -1,7 +1,7 @@
 import { GAME_WIDTH, GAME_HEIGHT, SAFE_TOP, SAFE_BOTTOM, COLORS } from '../config.js';
 import { STORY_PAGES, STORY_BEAT_COUNT } from '../storyData.js';
 import { createPixelButton, PIXEL_FONT } from '../ui.js';
-import { AudioManager, MUSIC_KEYS } from '../audio.js';
+import { AudioManager, SFX_KEYS, MUSIC_KEYS } from '../audio.js';
 
 // The beat illustrations are full-span, screen-filling art (853x1844,
 // matching our 390:844 design ratio almost exactly) — a Pokemon-style
@@ -125,6 +125,7 @@ export default class StoryScene extends Phaser.Scene {
 
   advance() {
     if (this.pageIndex + 1 < STORY_PAGES.length) {
+      AudioManager.playSfx(SFX_KEYS.TEXT_BLIP);
       this.pageIndex += 1;
       this.renderPage();
     } else {

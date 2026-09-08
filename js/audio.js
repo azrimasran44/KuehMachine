@@ -19,6 +19,8 @@ export const SFX_KEYS = {
   LOSE: 'sfx-lose',
   CLICK: 'sfx-click',
   PULSE: 'sfx-pulse',
+  THUNDER: 'sfx-thunder',
+  TEXT_BLIP: 'sfx-textblip',
 };
 
 export const MUSIC_KEYS = {
@@ -34,6 +36,8 @@ export const AUDIO_MANIFEST = [
   { key: SFX_KEYS.LOSE, url: 'assets/audio/sfx-lose.wav' },
   { key: SFX_KEYS.CLICK, url: 'assets/audio/sfx-click.wav' },
   { key: SFX_KEYS.PULSE, url: 'assets/audio/sfx-pulse.wav' },
+  { key: SFX_KEYS.THUNDER, url: 'assets/audio/sfx-thunder.wav' },
+  { key: SFX_KEYS.TEXT_BLIP, url: 'assets/audio/sfx-textblip.wav' },
   { key: MUSIC_KEYS.START_AMBIENT, url: 'assets/audio/music-start-ambient.wav' },
   { key: MUSIC_KEYS.STORY, url: 'assets/audio/music-story.wav' },
   { key: MUSIC_KEYS.GAMEPLAY, url: 'assets/audio/music-gameplay.wav' },

@@ -15,7 +15,7 @@ Gameplay — including Dr Leonard Rizz's own sprite — stays chunky pixel art t
 
 The Start Screen and the story sequence's 6 illustrations are the exception — real illustrated/animated reference art (smoothly filtered, not pixel-scaled). Those onboarding/narrative moments read as "cinematic," everything you actually play stays retro.
 
-Sound follows the same retro-arcade logic: every cue is a small synthesized chiptune waveform (square/triangle/noise, hand-built the way the sprites are — no stock sound packs), not a recording. A soft ambient hum and sparse electrical clicks under the Start Screen, a light pentatonic loop under the story, and an upbeat driving track under gameplay, with a per-move "boink," a landing thud, and win/lose stingers layered on top — one shared audio system fades and ducks between all of it so nothing ever cuts off abruptly.
+Sound follows the same retro-arcade logic: every cue is a small synthesized chiptune waveform (square/triangle/noise, hand-built the way the sprites are — no stock sound packs), not a recording. An eerie, slightly dissonant ambient bed (a detuned low-tone wobble, wind, a ghostly high overtone) plus sparse electrical clicks and the occasional distant thunder crack under the Start Screen's lightning strikes, a light pentatonic loop under the story (with a Pokémon-style blip on every dialogue advance), and an upbeat driving track under gameplay, with a per-move "boink," a landing thud, and win/lose stingers layered on top — one shared audio system fades and ducks between all of it so nothing ever cuts off abruptly.
 
 ## Features
 

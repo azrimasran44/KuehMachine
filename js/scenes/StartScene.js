@@ -96,15 +96,33 @@ export default class StartScene extends Phaser.Scene {
     };
     schedulePulse();
 
-    this.input.once('pointerdown', () => {
-      if (this.sound && this.sound.context && this.sound.context.state === 'suspended') {
-        this.sound.context.resume();
+    // A rarer, bigger thunder crack for the video's own lightning strikes —
+    // distinct from the small electrical clicks above, and spaced out
+    // enough to land as a genuine "moment" rather than a loop.
+    const scheduleThunder = () => {
+      this.time.delayedCall(Phaser.Math.Between(7000, 14000), () => {
+        AudioManager.playSfx(SFX_KEYS.THUNDER, { volume: 0.4 });
+        scheduleThunder();
+      });
+    };
+    scheduleThunder();
+
+    let begun = false;
+    const beginGame = () => {
+      if (begun) return;
+      begun = true;
+
+      const startAmbience = () => AudioManager.playMusic(MUSIC_KEYS.START_AMBIENT, { volume: 0.18, fadeMs: 150 });
+      // Poking context.state/resume() directly raced Phaser's own unlock
+      // bookkeeping — this is Phaser's documented pattern instead: sounds
+      // played while `locked` is true can silently go nowhere, so wait for
+      // the manager's own unlock signal rather than assuming resume()
+      // alone means playback is actually safe to start.
+      if (this.sound.locked) {
+        this.sound.once(Phaser.Sound.Events.UNLOCKED, startAmbience);
+      } else {
+        startAmbience();
       }
-      // Starts right as the context unlocks, so it gets a real (if brief)
-      // moment to be heard — a bare instant transition would give it none
-      // at all. The fade below is what buys that moment, reading as a
-      // deliberate scene transition rather than an unresponsive tap.
-      AudioManager.playMusic(MUSIC_KEYS.START_AMBIENT, { volume: 0.18, fadeMs: 150 });
 
       const fadeOut = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0)
         .setOrigin(0).setDepth(100);
@@ -114,6 +132,18 @@ export default class StartScene extends Phaser.Scene {
         duration: 450,
         onComplete: () => this.scene.start('Story'),
       });
+    };
+
+    this.input.once('pointerdown', beginGame);
+    // Backup: if anything ever sits between the pointer and the canvas
+    // (an overlay, a browser quirk) and swallows that first tap before
+    // Phaser's own canvas-scoped input sees it, a gesture landing
+    // anywhere else on the page still reaches here and starts the game —
+    // matching what's actually been observed to unstick this screen.
+    const onDocumentGesture = () => beginGame();
+    document.addEventListener('pointerdown', onDocumentGesture, { once: true });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      document.removeEventListener('pointerdown', onDocumentGesture);
     });
   }
 }
