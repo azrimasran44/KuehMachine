@@ -13,11 +13,11 @@ This build is the first full arc: a Start Screen and a skippable storyline seque
 
 Gameplay — including Dr Leonard Rizz's own sprite — stays chunky pixel art throughout: deep indigo/navy void-deck night, warm amber-gold HUD text (streetlamp glow), mint-green for the Machine and Ondeh-Ondeh, hot pink-red for Ang Ku Kueh and danger states, hand-built 16×16 nearest-neighbor sprites for the player, traffic, monsters, the lab building/staircase/Machine goal markers, and the ground-floor office set (floor tile, table, chair, plant), chunky drop-shadow "pixel-bevel" buttons throughout. Pixelify Sans for titles/HUD/buttons, Syne (the typeface the rest of kuehmachine.com uses) for body copy.
 
-The Start Screen and the story sequence's 6 illustrations are the exception — real illustrated reference art (smoothly filtered, not pixel-scaled). Those onboarding/narrative moments read as "cinematic," everything you actually play stays retro.
+The Start Screen and the story sequence's 6 illustrations are the exception — real illustrated/animated reference art (smoothly filtered, not pixel-scaled). Those onboarding/narrative moments read as "cinematic," everything you actually play stays retro.
 
 ## Features
 
-- [x] Start Screen — the actual reference illustration: a lightning-struck rooftop Machine atop a lit office tower at night, tap anywhere to begin
+- [x] Start Screen — a full-bleed looping hero video of the lightning-struck rooftop Machine atop a lit office tower at night, its own "RUN KUEH RUN" title and "TAP TO START" prompt baked into the animation; tap anywhere to begin
 - [x] Skippable storyline sequence, Pokémon-style — each of the 6 beats is a full-screen illustration with a pixel-art dialogue box (hand-drawn 9-slice frame, not a plain rectangle) overlaid near the bottom, consistent position and size throughout, with a Skip button visible the whole time and progress dots showing how much is left
 - [x] Dr Leonard Rizz — the Machine's own creator, hardcoded as the (for now) only playable character; the moment the story ends or is skipped, he drops in from above the frame and lands on his starting tile with a little impact bounce, controls locked (and immune to traffic) until he's actually down
 - [x] The environment auto-advances independent of the player, Crossy Road-style — a survival buffer drains continuously and only refills when you move toward the Machine, and doesn't start at all until your first move so you always get a clear look at your character before any pressure begins; let it hit zero (or retreat far enough to fall off the bottom of the screen) and the screen shakes and blacks out
