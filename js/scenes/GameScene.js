@@ -9,6 +9,7 @@ import { InputManager } from '../input.js';
 import { LEVELS, getLevelConfig, buildLaneLayout } from '../levels.js';
 import { reportScore } from '../progress.js';
 import { PIXEL_FONT } from '../ui.js';
+import { AudioManager, SFX_KEYS, MUSIC_KEYS } from '../audio.js';
 
 const SPRITE_SIZE = TILE * 0.8;
 const CAR_WIDTH = TILE * 0.9;
@@ -301,6 +302,12 @@ export default class GameScene extends Phaser.Scene {
     this.player.isMoving = false;
     this.isLanding = false;
     this.cameras.main.shake(90, 0.004); // a light thud, distinct from the stronger death shakes
+    AudioManager.playSfx(SFX_KEYS.LAND);
+    // Anchored here (not create()) rather than at scene start, so it
+    // fires exactly once per level, right as control is actually handed
+    // to the player — and since it's the same key every level, this is a
+    // no-op-that-continues on Levels 2-3, never a restart.
+    AudioManager.playMusic(MUSIC_KEYS.GAMEPLAY, { volume: 0.4 });
 
     const sprite = this.playerSprite;
     this.tweens.add({
@@ -491,6 +498,12 @@ export default class GameScene extends Phaser.Scene {
     if (col === this.player.col && row === this.player.row) return;
     if (this.obstacleCells.has(`${row},${col}`)) return; // blocked by furniture — same as a no-op move
 
+    // Every early-return above this line covers the "not actually
+    // moving" cases (game over, mid-move, screen edge, blocked cell) — so
+    // this fires exactly once per genuinely-accepted move. A touch of
+    // pitch variation keeps it from sounding robotic on repeat.
+    AudioManager.playSfx(SFX_KEYS.MOVE, { volume: 0.5, rate: Phaser.Math.FloatBetween(0.95, 1.05) });
+
     if (!this.hasMoved) {
       // Nothing auto-advances until the player acts for the first time —
       // they get unlimited time to see where they are before any
@@ -530,6 +543,14 @@ export default class GameScene extends Phaser.Scene {
 
   reachGoal() {
     this.gameEnded = true;
+    AudioManager.playSfx(SFX_KEYS.WIN);
+    // Ducking (not stopping) is what makes this read as a transition
+    // rather than a cut — the jingle plays over a softened, still-running
+    // bed. Levels 1-2 auto-un-duck the instant the next level's
+    // playerLandingImpact() calls playMusic() again (same key, idempotent
+    // replay); the true Level-3 win never makes that call again, so the
+    // bed stays softly audible under "YOU MADE IT!" rather than dying.
+    AudioManager.duckMusic({ to: 0.25, fadeMs: 250 });
     reportScore(this.score);
     this.cameras.main.flash(300, 56, 211, 159);
     if (this.level < LEVELS.length) {
@@ -542,6 +563,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   finishLose(cause) {
+    AudioManager.playSfx(SFX_KEYS.LOSE);
     // The 'caught' death already has its own dedicated visual (the
     // blackout fade in triggerCaught) — shake/flash on top of a fully
     // opaque screen would just be a pointless colour blip on black.
@@ -556,12 +578,14 @@ export default class GameScene extends Phaser.Scene {
   pauseGame() {
     if (this.gameEnded || this.isPaused) return;
     this.isPaused = true;
+    AudioManager.duckMusic({ to: 0.12 });
     this.scene.pause();
     this.scene.launch('Pause', { gameScene: this });
   }
 
   resumeGame() {
     this.isPaused = false;
+    AudioManager.unduckMusic();
     this.scene.resume();
   }
 }

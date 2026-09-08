@@ -1,3 +1,5 @@
+import { AUDIO_MANIFEST } from '../audio.js';
+
 export default class PreloadScene extends Phaser.Scene {
   constructor() {
     super('Preload');
@@ -26,6 +28,8 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image('beat5', 'assets/sprites/beat5.png');
     this.load.image('beat6', 'assets/sprites/beat6.png');
     this.load.image('textbox', 'assets/sprites/textbox.png');
+
+    AUDIO_MANIFEST.forEach(({ key, url }) => this.load.audio(key, url));
   }
 
   create() {

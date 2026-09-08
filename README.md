@@ -15,6 +15,8 @@ Gameplay — including Dr Leonard Rizz's own sprite — stays chunky pixel art t
 
 The Start Screen and the story sequence's 6 illustrations are the exception — real illustrated/animated reference art (smoothly filtered, not pixel-scaled). Those onboarding/narrative moments read as "cinematic," everything you actually play stays retro.
 
+Sound follows the same retro-arcade logic: every cue is a small synthesized chiptune waveform (square/triangle/noise, hand-built the way the sprites are — no stock sound packs), not a recording. A soft ambient hum and sparse electrical clicks under the Start Screen, a light pentatonic loop under the story, and an upbeat driving track under gameplay, with a per-move "boink," a landing thud, and win/lose stingers layered on top — one shared audio system fades and ducks between all of it so nothing ever cuts off abruptly.
+
 ## Features
 
 - [x] Start Screen — a full-bleed looping hero video of the lightning-struck rooftop Machine atop a lit office tower at night, its own "RUN KUEH RUN" title and "TAP TO START" prompt baked into the animation; tap anywhere to begin
@@ -29,6 +31,7 @@ The Start Screen and the story sequence's 6 illustrations are the exception — 
 - [x] True full-screen canvas on phones; capped to a mobile-width column (not stretched full-width) on desktop browsers
 - [x] Pause (manual button + auto-pause when the tab loses focus), with a "3, 2, 1, GO!" countdown before play actually resumes
 - [x] High score, saved locally and synced to your kuehmachine.com account when signed in
+- [x] Full sound design — ambient hum + random electrical clicks on the Start Screen, a light story-sequence loop, an energetic gameplay track, a per-move "boink," a landing thud, and win/lose stingers, all synthesized chiptune-style; music crossfades between scenes, ducks (rather than cutting) under pauses and end-of-level jingles, and keeps playing gaplessly across all 3 levels without restarting
 
 ## Backlog (not in this build)
 

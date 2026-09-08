@@ -1,6 +1,7 @@
 import { GAME_WIDTH, GAME_HEIGHT, SAFE_TOP, SAFE_BOTTOM, COLORS } from '../config.js';
 import { STORY_PAGES, STORY_BEAT_COUNT } from '../storyData.js';
 import { createPixelButton, PIXEL_FONT } from '../ui.js';
+import { AudioManager, MUSIC_KEYS } from '../audio.js';
 
 // The beat illustrations are full-span, screen-filling art (853x1844,
 // matching our 390:844 design ratio almost exactly) — a Pokemon-style
@@ -21,6 +22,8 @@ export default class StoryScene extends Phaser.Scene {
 
   create() {
     this.pageIndex = 0;
+
+    AudioManager.playMusic(MUSIC_KEYS.STORY, { volume: 0.35, fadeMs: 600 });
 
     // Tapping anywhere advances — attached to the background itself so
     // Phaser's own hit-testing naturally routes a tap on the Skip button

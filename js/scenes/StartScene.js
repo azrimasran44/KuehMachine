@@ -1,6 +1,7 @@
 import { GAME_WIDTH, GAME_HEIGHT, SAFE_BOTTOM, COLORS } from '../config.js';
 import { getLocalHighScoreSync, getHighScore } from '../progress.js';
 import { PIXEL_FONT } from '../ui.js';
+import { AudioManager, SFX_KEYS, MUSIC_KEYS } from '../audio.js';
 
 export default class StartScene extends Phaser.Scene {
   constructor() {
@@ -10,6 +11,11 @@ export default class StartScene extends Phaser.Scene {
   create() {
     const cx = GAME_WIDTH / 2;
     const cy = GAME_HEIGHT / 2;
+
+    // Defensive reset — a no-op on first load, but matters for the
+    // BACK TO MENU path from GameOverScene, so a ducked win/lose tail (or
+    // gameplay music) never bleeds onto this screen.
+    AudioManager.stopMusic({ fadeMs: 500 });
 
     this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, COLORS.background, 1).setOrigin(0);
 
@@ -65,11 +71,49 @@ export default class StartScene extends Phaser.Scene {
       color: '#5b5480',
     }).setOrigin(0.5);
 
+    // Sparse, irregular electrical clicks and a soft periodic pulse,
+    // matching the lightning/rooftop-machine mood — random rather than
+    // synchronized to any specific visual beat, since the video's own
+    // flicker animation isn't something this code can hook an event into.
+    // Browsers block audio autoplay without a user gesture, and this
+    // screen's only gesture (tap) also immediately navigates away, so in
+    // practice these are very unlikely to be heard before that tap — kept
+    // scheduled anyway (harmless, correct if a browser is ever lenient)
+    // rather than silently dropped.
+    const scheduleClick = () => {
+      this.time.delayedCall(Phaser.Math.Between(2500, 6000), () => {
+        AudioManager.playSfx(SFX_KEYS.CLICK, { volume: 0.25, rate: Phaser.Math.FloatBetween(0.9, 1.15) });
+        scheduleClick();
+      });
+    };
+    scheduleClick();
+
+    const schedulePulse = () => {
+      this.time.delayedCall(1800, () => {
+        AudioManager.playSfx(SFX_KEYS.PULSE, { volume: 0.3 });
+        schedulePulse();
+      });
+    };
+    schedulePulse();
+
     this.input.once('pointerdown', () => {
       if (this.sound && this.sound.context && this.sound.context.state === 'suspended') {
         this.sound.context.resume();
       }
-      this.scene.start('Story');
+      // Starts right as the context unlocks, so it gets a real (if brief)
+      // moment to be heard — a bare instant transition would give it none
+      // at all. The fade below is what buys that moment, reading as a
+      // deliberate scene transition rather than an unresponsive tap.
+      AudioManager.playMusic(MUSIC_KEYS.START_AMBIENT, { volume: 0.18, fadeMs: 150 });
+
+      const fadeOut = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0)
+        .setOrigin(0).setDepth(100);
+      this.tweens.add({
+        targets: fadeOut,
+        alpha: 1,
+        duration: 450,
+        onComplete: () => this.scene.start('Story'),
+      });
     });
   }
 }

@@ -1,4 +1,5 @@
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from './config.js';
+import { AudioManager } from './audio.js';
 import BootScene from './scenes/BootScene.js';
 import PreloadScene from './scenes/PreloadScene.js';
 import StartScene from './scenes/StartScene.js';
@@ -8,7 +9,7 @@ import LevelIntroScene from './scenes/LevelIntroScene.js';
 import PauseScene from './scenes/PauseScene.js';
 import GameOverScene from './scenes/GameOverScene.js';
 
-new Phaser.Game({
+const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game-container',
   backgroundColor: COLORS.background,
@@ -25,3 +26,5 @@ new Phaser.Game({
   },
   scene: [BootScene, PreloadScene, StartScene, StoryScene, GameScene, LevelIntroScene, PauseScene, GameOverScene],
 });
+
+AudioManager.init(game);
