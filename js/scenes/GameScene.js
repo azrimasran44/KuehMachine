@@ -6,10 +6,12 @@ import {
   INITIAL_BUFFER_PX, MAX_BUFFER_PX, BUFFER_REFILL_PX, CAMERA_SMOOTH,
 } from '../config.js';
 import { InputManager } from '../input.js';
-import { LEVELS, getLevelConfig, buildLaneLayout } from '../levels.js';
+import { LEVELS, getLevelConfig, buildLaneLayout, buildCoinLayout } from '../levels.js';
 import { reportScore } from '../progress.js';
 import { PIXEL_FONT } from '../ui.js';
 import { AudioManager, SFX_KEYS, MUSIC_KEYS } from '../audio.js';
+import { getCharacterConfig } from '../characters.js';
+import { getSelectedCharacterSync, getLocalCoinsSync, addCoins } from '../wallet.js';
 
 const SPRITE_SIZE = TILE * 0.8;
 const CAR_WIDTH = TILE * 0.9;
@@ -34,6 +36,7 @@ export default class GameScene extends Phaser.Scene {
     this.worldHeight = BOARD_TOP + this.rows * TILE + 40;
     this.maxScrollY = Math.max(0, this.worldHeight - GAME_HEIGHT);
     this.laneLayout = buildLaneLayout(this.levelConfig);
+    this.coinLayout = buildCoinLayout(this.levelConfig, this.laneLayout);
 
     this.gameEnded = false;
     this.isPaused = false;
@@ -41,6 +44,7 @@ export default class GameScene extends Phaser.Scene {
     this.inputManager = new InputManager();
     this.buffer = INITIAL_BUFFER_PX;
     this.hasMoved = false;
+    this.walletCoins = getLocalCoinsSync();
 
     this.cameras.main.setBounds(0, 0, GAME_WIDTH, this.worldHeight);
 
@@ -141,6 +145,18 @@ export default class GameScene extends Phaser.Scene {
         .flatMap((l) => l.occupiedCols.map((col) => `${l.row},${col}`)),
     );
 
+    // Coins — a Map (not a Set, like obstacleCells) since each entry also
+    // needs to carry the sprite to destroy on collection.
+    this.coinCells = new Map();
+    this.coinLayout.forEach(({ row, col }) => {
+      const sprite = this.add.image(colToX(col), this.rowToY(row), 'coin')
+        .setDisplaySize(SPRITE_SIZE * 0.5, SPRITE_SIZE * 0.5);
+      this.tweens.add({
+        targets: sprite, y: '+=6', duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+      this.coinCells.set(`${row},${col}`, sprite);
+    });
+
     g.lineStyle(3, COLORS.goalGlow, 0.9);
     g.lineBetween(0, this.rowToY(GOAL_ROW) + TILE / 2, GAME_WIDTH, this.rowToY(GOAL_ROW) + TILE / 2);
 
@@ -151,7 +167,7 @@ export default class GameScene extends Phaser.Scene {
   createHud() {
     const HUD_DEPTH = 1000;
 
-    this.add.rectangle(0, 0, GAME_WIDTH, SAFE_TOP + 44, 0x0a0820, 0.6)
+    this.add.rectangle(0, 0, GAME_WIDTH, SAFE_TOP + 70, 0x0a0820, 0.6)
       .setOrigin(0, 0)
       .setScrollFactor(0)
       .setDepth(HUD_DEPTH - 1);
@@ -176,9 +192,22 @@ export default class GameScene extends Phaser.Scene {
       letterSpacing: 2,
     }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(HUD_DEPTH);
 
+    this.createCoinDisplay(HUD_DEPTH);
     this.createBufferMeter(HUD_DEPTH);
     this.createPauseButton(HUD_DEPTH);
     this.createGraceHint(HUD_DEPTH);
+  }
+
+  createCoinDisplay(depth) {
+    // Directly under SCORE — true top-left, as its own compact secondary
+    // readout rather than competing with SCORE for the same line.
+    const y = SAFE_TOP + 42;
+    this.add.image(26, y, 'coin').setDisplaySize(16, 16).setScrollFactor(0).setDepth(depth);
+    this.coinText = this.add.text(40, y, `${this.walletCoins}`, {
+      fontFamily: PIXEL_FONT,
+      fontSize: '15px',
+      color: COLORS.hudGold,
+    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(depth);
   }
 
   createBufferMeter(depth) {
@@ -210,7 +239,7 @@ export default class GameScene extends Phaser.Scene {
     // Stays up until the player actually moves rather than fading on a
     // fixed timer — nothing else starts happening until then either, so
     // there's no rush to read it.
-    this.graceHint = this.add.text(GAME_WIDTH / 2, SAFE_TOP + 70, 'SWIPE OR ARROW KEYS TO MOVE', {
+    this.graceHint = this.add.text(GAME_WIDTH / 2, SAFE_TOP + 95, 'SWIPE OR ARROW KEYS TO MOVE', {
       fontFamily: 'Syne, sans-serif',
       fontSize: '12px',
       color: '#cfc9e8',
@@ -266,7 +295,8 @@ export default class GameScene extends Phaser.Scene {
     // "shadow anticipates the landing" cue from platformers.
     const shadow = this.add.ellipse(0, SPRITE_SIZE * 0.32, SPRITE_SIZE * 0.7, SPRITE_SIZE * 0.28, 0x000000, 0.3)
       .setAlpha(0).setScale(0.4);
-    const sprite = this.add.image(0, 0, 'player');
+    const charTexture = getCharacterConfig(getSelectedCharacterSync()).texture;
+    const sprite = this.add.image(0, 0, charTexture);
     sprite.setDisplaySize(SPRITE_SIZE, SPRITE_SIZE);
     container.add([shadow, sprite]);
     this.player = { container, col: START_COL, row: this.startRow, isMoving: false };
@@ -504,6 +534,9 @@ export default class GameScene extends Phaser.Scene {
     // pitch variation keeps it from sounding robotic on repeat.
     AudioManager.playSfx(SFX_KEYS.MOVE, { volume: 0.5, rate: Phaser.Math.FloatBetween(0.95, 1.05) });
 
+    const coinKey = `${row},${col}`;
+    if (this.coinCells.has(coinKey)) this.collectCoin(coinKey);
+
     if (!this.hasMoved) {
       // Nothing auto-advances until the player acts for the first time —
       // they get unlimited time to see where they are before any
@@ -525,6 +558,22 @@ export default class GameScene extends Phaser.Scene {
     }
 
     this.moveEntity(this.player, col, row, MOVE_DURATION, () => this.onPlayerMoveComplete());
+  }
+
+  collectCoin(coinKey) {
+    const sprite = this.coinCells.get(coinKey);
+    this.coinCells.delete(coinKey);
+    this.tweens.add({
+      targets: sprite,
+      scale: sprite.scale * 1.6,
+      alpha: 0,
+      duration: 180,
+      ease: 'Quad.easeOut',
+      onComplete: () => sprite.destroy(),
+    });
+    this.walletCoins = addCoins(1);
+    this.coinText.setText(`${this.walletCoins}`);
+    AudioManager.playSfx(SFX_KEYS.COIN);
   }
 
   onPlayerMoveComplete() {

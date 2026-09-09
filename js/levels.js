@@ -18,6 +18,7 @@ export const LEVELS = [
     hazardTexture: 'road',
     hazardSpeedSlow: 60,
     hazardSpeedFast: 125,
+    coinChance: 0.2,
   },
   {
     id: 2,
@@ -32,6 +33,7 @@ export const LEVELS = [
     hazardSpeedFast: 140,
     obstacleDensity: 0.35,
     obstacleTypes: ['office_table', 'office_chair', 'office_plant'],
+    coinChance: 0.2,
   },
   {
     id: 3,
@@ -46,6 +48,7 @@ export const LEVELS = [
     hazardSpeedFast: 175,
     obstacleDensity: 0.5,
     obstacleTypes: ['office_table', 'office_chair', 'office_plant'],
+    coinChance: 0.2,
   },
 ];
 
@@ -120,4 +123,21 @@ function buildObstacleLane(row, levelConfig) {
   const occupiedCols = candidates.slice(0, targetCount);
   const propTypes = occupiedCols.map(() => Phaser.Utils.Array.GetRandom(levelConfig.obstacleTypes));
   return { row, type: 'obstacle', occupiedCols, propTypes };
+}
+
+// Sparse, Crossy-Road-style coins — roughly one every 1/coinChance rows,
+// never on a statically-blocked obstacle cell (unreachable), but free to
+// land on a monster/traffic lane, where collecting it is a timing risk
+// rather than a guaranteed pickup.
+export function buildCoinLayout(levelConfig, laneLayout) {
+  const crossingRows = levelConfig.rows - 2;
+  const coins = [];
+  for (let row = 1; row <= crossingRows; row++) {
+    if (Math.random() >= levelConfig.coinChance) continue;
+    const lane = laneLayout.find((l) => l.row === row);
+    const blocked = lane?.type === 'obstacle' ? new Set(lane.occupiedCols) : new Set();
+    const openCols = Phaser.Utils.Array.NumberArray(0, COLS - 1).filter((c) => !blocked.has(c));
+    coins.push({ row, col: Phaser.Utils.Array.GetRandom(openCols) });
+  }
+  return coins;
 }

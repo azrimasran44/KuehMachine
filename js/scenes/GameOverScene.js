@@ -59,7 +59,18 @@ export default class GameOverScene extends Phaser.Scene {
       onClick: () => this.scene.start('Game', { level: 1, score: 0 }),
     });
 
-    const menuBtn = this.add.text(cx, 590, 'BACK TO MENU', {
+    createPixelButton(this, cx, 578, 200, 48, 'CHEFS', {
+      fontSize: '18px',
+      fillColor: 0x2a2450,
+      textColor: COLORS.hudCream,
+      // Passes this screen's own data through as returnTo — the shop
+      // hands it straight back on its own Back button, so "come back
+      // from browsing chefs" lands on the exact same result screen
+      // rather than a blank/default one.
+      onClick: () => this.scene.start('CharacterSelect', { returnTo: { result, score, cause } }),
+    });
+
+    const menuBtn = this.add.text(cx, 640, 'BACK TO MENU', {
       fontFamily: 'Syne, sans-serif',
       fontSize: '13px',
       color: '#8b84b0',
