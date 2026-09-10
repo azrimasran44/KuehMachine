@@ -59,8 +59,8 @@ export default class GameOverScene extends Phaser.Scene {
       onClick: () => this.scene.start('Game', { level: 1, score: 0 }),
     });
 
-    createPixelButton(this, cx, 578, 280, 48, 'UNLOCK CHARACTERS', {
-      fontSize: '15px',
+    createPixelButton(this, cx, 578, 240, 48, 'UNLOCK CHARACTERS', {
+      fontSize: '13px',
       fillColor: 0x2a2450,
       textColor: COLORS.hudCream,
       // Passes this screen's own data through as returnTo — the shop
