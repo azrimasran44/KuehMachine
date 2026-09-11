@@ -71,28 +71,39 @@ export default class GameOverScene extends Phaser.Scene {
       onClick: () => this.scene.start('Game', { level: 1 }),
     });
 
-    // Three icon buttons, evenly spaced, pinned near the bottom of the
-    // screen — a compact secondary-actions row below the main RETRY CTA.
+    // Three actions, evenly spaced, pinned near the bottom of the screen —
+    // a compact secondary-actions row below the main RETRY CTA. Only Home
+    // keeps its icon button; the other two are plain text links, matching
+    // the same horizontal alignment.
     const footerY = 700;
     const iconSize = 56;
 
-    createIconButton(this, GAME_WIDTH / 6, footerY, iconSize, 'icon_characters', 'Characters', {
-      // Passes this screen's own data through as returnTo — the shop
-      // hands it straight back on its own Back button, so "come back
-      // from browsing chefs" lands on the exact same result screen
-      // rather than a blank/default one.
-      onClick: () => this.scene.start('CharacterSelect', { returnTo: { result, timeMs, cause } }),
-    });
+    const charactersLink = this.add.text(GAME_WIDTH / 6, footerY, 'Unlock characters', {
+      fontFamily: 'Syne, sans-serif',
+      fontSize: '13px',
+      color: COLORS.hudCream,
+      align: 'center',
+      wordWrap: { width: 100 },
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    // Passes this screen's own data through as returnTo — the shop hands
+    // it straight back on its own Back button, so "come back from
+    // browsing chefs" lands on the exact same result screen rather than a
+    // blank/default one.
+    charactersLink.on('pointerdown', () => this.scene.start('CharacterSelect', { returnTo: { result, timeMs, cause } }));
 
     createIconButton(this, GAME_WIDTH / 2, footerY, iconSize, 'icon_home', null, {
       onClick: () => this.scene.start('Start'),
     });
 
-    createIconButton(this, (GAME_WIDTH / 6) * 5, footerY, iconSize, 'icon_leaderboard', 'Scoreboard', {
-      onClick: () => this.scene.start('Leaderboard', {
-        returnTo: { scene: 'GameOver', data: { result, timeMs, cause, isNewBest } },
-      }),
-    });
+    const scoreboardLink = this.add.text((GAME_WIDTH / 6) * 5, footerY, 'Scoreboard', {
+      fontFamily: 'Syne, sans-serif',
+      fontSize: '13px',
+      color: COLORS.hudCream,
+      align: 'center',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    scoreboardLink.on('pointerdown', () => this.scene.start('Leaderboard', {
+      returnTo: { scene: 'GameOver', data: { result, timeMs, cause, isNewBest } },
+    }));
 
     // A qualifying win (a genuine new best, while signed in) offers the
     // one-time nickname prompt before submitting to the public board —
