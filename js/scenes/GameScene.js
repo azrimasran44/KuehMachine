@@ -451,9 +451,16 @@ export default class GameScene extends Phaser.Scene {
     return monster;
   }
 
-  // Level 1 ("crossing the road"): an eagle swoops in, grabs the player,
-  // and carries them off the top of the screen instead of a monster lunge.
+  // Level 1 ("crossing the road"): the hit registers immediately (the same
+  // red shake+flash as any other hazard death), and only once that's read
+  // does the eagle swoop in, grab the player, and carry them off the top
+  // of the screen.
   playEagleGrab() {
+    this.flashHazardHit();
+    this.time.delayedCall(250, () => this.spawnEagleCarry());
+  }
+
+  spawnEagleCarry() {
     const px = this.player.container.x;
     const py = this.player.container.y;
     const eagleSize = SPRITE_SIZE * 1.7;
@@ -485,7 +492,7 @@ export default class GameScene extends Phaser.Scene {
           y: exitY,
           duration: 550,
           ease: 'Quad.easeIn',
-          onComplete: () => this.finishLose('hazard'),
+          onComplete: () => this.finishLose('hazard', { skipImpactFx: true }),
         });
       },
     });
@@ -667,14 +674,23 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
-  finishLose(cause) {
+  // The shared "you got hit" shake+flash — pulled out of finishLose so the
+  // eagle grab can fire it immediately on impact, well before finishLose
+  // itself is called at the end of the carry-off animation.
+  flashHazardHit() {
+    this.cameras.main.shake(200, 0.01);
+    this.cameras.main.flash(200, 255, 77, 109);
+  }
+
+  finishLose(cause, { skipImpactFx = false } = {}) {
     AudioManager.playSfx(SFX_KEYS.LOSE);
     // The 'caught' death already has its own dedicated visual (the
     // blackout fade in triggerCaught) — shake/flash on top of a fully
-    // opaque screen would just be a pointless colour blip on black.
-    if (cause !== 'caught') {
-      this.cameras.main.shake(200, 0.01);
-      this.cameras.main.flash(200, 255, 77, 109);
+    // opaque screen would just be a pointless colour blip on black. The
+    // eagle grab also skips it here since it already fired at the moment
+    // of impact, before the carry-off animation played out.
+    if (cause !== 'caught' && !skipImpactFx) {
+      this.flashHazardHit();
     }
     reportScore(this.score);
     this.time.delayedCall(450, () => this.scene.start('GameOver', { result: 'lose', score: this.score, cause }));
