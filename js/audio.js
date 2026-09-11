@@ -57,6 +57,7 @@ class AudioManagerImpl {
     this._musicKey = null;
     this._musicSound = null;
     this._musicTargetVolume = 0;
+    this._pendingMusicKey = null;
     this._ducked = false;
     this._fades = new Map(); // Sound instance -> in-flight fade record
     this._rafId = null;
@@ -98,25 +99,53 @@ class AudioManagerImpl {
       return;
     }
 
-    // play()'s own internal setup applies its volume config asynchronously
-    // (some ms after play() returns, once the audio buffer actually
-    // connects) — reading sound.volume synchronously right after play()
-    // catches Phaser's stale default (~1) rather than the 0 just
-    // requested. Fading from an explicit 0 rather than a synchronous read
-    // sidesteps the race entirely; the per-frame tick loop re-asserts the
-    // fade's own math every frame regardless, so even if Phaser's
-    // deferred correction lands mid-fade it's outweighed within one frame.
-    const incoming = this._sound.add(key, { loop });
-    incoming.play('', { loop, volume: 0 });
-    this._fadeTo(incoming, volume, fadeMs, undefined, 0);
+    // A sound started while the browser hasn't unlocked audio yet never
+    // actually plays — every caller used to need its own sound.locked/
+    // UNLOCKED dance to avoid that (only the Start Screen had one; a scene
+    // reached shortly after, like the story sequence, had no such guard
+    // and could silently lose its very first playMusic call on a device
+    // where unlock hasn't finished by the time it runs). Handling it once,
+    // here, means every caller gets this for free. A second call for the
+    // SAME key while one is already waiting on unlock just updates the
+    // target volume rather than queuing a duplicate deferred start.
+    if (this._sound.locked) {
+      if (this._pendingMusicKey === key) {
+        this._musicTargetVolume = volume;
+        return;
+      }
+      this._pendingMusicKey = key;
+      this._musicTargetVolume = volume;
+      this._sound.once(Phaser.Sound.Events.UNLOCKED, () => {
+        if (this._pendingMusicKey !== key) return; // superseded by a newer call
+        this._pendingMusicKey = null;
+        this.playMusic(key, { volume: this._musicTargetVolume, fadeMs, loop });
+      });
+      return;
+    }
 
-    const outgoing = this._musicSound;
-    if (outgoing) this._fadeTo(outgoing, 0, fadeMs, () => outgoing.destroy());
+    try {
+      // play()'s own internal setup applies its volume config asynchronously
+      // (some ms after play() returns, once the audio buffer actually
+      // connects) — reading sound.volume synchronously right after play()
+      // catches Phaser's stale default (~1) rather than the 0 just
+      // requested. Fading from an explicit 0 rather than a synchronous read
+      // sidesteps the race entirely; the per-frame tick loop re-asserts the
+      // fade's own math every frame regardless, so even if Phaser's
+      // deferred correction lands mid-fade it's outweighed within one frame.
+      const incoming = this._sound.add(key, { loop });
+      incoming.play('', { loop, volume: 0 });
+      this._fadeTo(incoming, volume, fadeMs, undefined, 0);
 
-    this._musicKey = key;
-    this._musicSound = incoming;
-    this._musicTargetVolume = volume;
-    this._ducked = false;
+      const outgoing = this._musicSound;
+      if (outgoing) this._fadeTo(outgoing, 0, fadeMs, () => outgoing.destroy());
+
+      this._musicKey = key;
+      this._musicSound = incoming;
+      this._musicTargetVolume = volume;
+      this._ducked = false;
+    } catch (err) {
+      console.warn(`[audio] music "${key}" failed to play:`, err);
+    }
   }
 
   stopMusic({ fadeMs = 400 } = {}) {

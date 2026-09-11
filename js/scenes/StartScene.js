@@ -120,17 +120,10 @@ export default class StartScene extends Phaser.Scene {
       if (begun) return;
       begun = true;
 
-      const startAmbience = () => AudioManager.playMusic(MUSIC_KEYS.THEME_SONG, { volume: 0.3, fadeMs: 150 });
-      // Poking context.state/resume() directly raced Phaser's own unlock
-      // bookkeeping — this is Phaser's documented pattern instead: sounds
-      // played while `locked` is true can silently go nowhere, so wait for
-      // the manager's own unlock signal rather than assuming resume()
-      // alone means playback is actually safe to start.
-      if (this.sound.locked) {
-        this.sound.once(Phaser.Sound.Events.UNLOCKED, startAmbience);
-      } else {
-        startAmbience();
-      }
+      // AudioManager.playMusic itself now waits for the audio-unlock signal
+      // when needed (sounds started before the browser unlocks audio never
+      // actually play) — no separate sound.locked dance required here.
+      AudioManager.playMusic(MUSIC_KEYS.THEME_SONG, { volume: 0.3, fadeMs: 150 });
 
       const fadeOut = this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0)
         .setOrigin(0).setDepth(100);
