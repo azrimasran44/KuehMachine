@@ -92,7 +92,6 @@ export default class GameScene extends Phaser.Scene {
     if (!this.isLanding) {
       this.checkHazardCollision();
       if (this.gameEnded) return;
-      this.checkCarProximity();
     }
 
     if (this.hasMoved) {
@@ -390,16 +389,7 @@ export default class GameScene extends Phaser.Scene {
     sprite.setDisplaySize(w, h);
     sprite.setFlipX(lane.dir === -1);
     if (isTraffic) sprite.setTint(lane.isFast ? 0xffb0a8 : 0xbfe8ff);
-    this.hazards.push({
-      sprite, dir: lane.dir, speed: lane.speed, halfW: w * 0.4, halfH: h * 0.4,
-      isTraffic, honked: false,
-    });
-    // A fast car announces itself as it enters — a one-shot "vroom"
-    // rather than a sustained loop per car, which would get messy with
-    // several cars on screen at once.
-    if (isTraffic && lane.isFast) {
-      AudioManager.playSfx(SFX_KEYS.ENGINE, { volume: 0.35, rate: Phaser.Math.FloatBetween(0.95, 1.08) });
-    }
+    this.hazards.push({ sprite, dir: lane.dir, speed: lane.speed, halfW: w * 0.4, halfH: h * 0.4 });
   }
 
   updateHazards(delta) {
@@ -426,27 +416,6 @@ export default class GameScene extends Phaser.Scene {
       if (Math.abs(px - hazard.sprite.x) < hazard.halfW + hitHalf && Math.abs(py - hazard.sprite.y) < hazard.halfH + hitHalf) {
         this.killByHazard();
         return;
-      }
-    }
-  }
-
-  // A car (never a monster — this is specifically "traffic noise") honks
-  // once as it closes in on the player's own lane, a beat before it's
-  // actually close enough to be dangerous — an early warning cue, not a
-  // hazard-detection duplicate. `honked` latches per car so it only
-  // sounds once per approach, not every frame it stays close.
-  checkCarProximity() {
-    const px = this.player.container.x;
-    const py = this.player.container.y;
-
-    for (const hazard of this.hazards) {
-      if (!hazard.isTraffic || hazard.honked) continue;
-      const sameLane = Math.abs(py - hazard.sprite.y) < TILE * 0.5;
-      if (!sameLane) continue;
-      const dx = Math.abs(px - hazard.sprite.x);
-      if (dx < TILE * 2.5 && dx > hazard.halfW) {
-        hazard.honked = true;
-        AudioManager.playSfx(SFX_KEYS.HORN, { volume: 0.4 });
       }
     }
   }
