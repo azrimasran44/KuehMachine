@@ -38,6 +38,6 @@ Sound follows the same retro-arcade logic: every cue is a small synthesized chip
 ## Backlog (not in this build)
 
 - The Mystery Character — currently a locked, non-interactive "coming soon" silhouette in the chef shop
-- More monster types beyond Ang Ku Kueh/Ondeh-Ondeh, a boss, the ending cutscene
+- More monster types beyond Ang Ku Kueh/Ondeh-Ondeh/Kueh Lapis, a boss, the ending cutscene
 - Haptics, reduced-motion mode
 - A public leaderboard instead of just a private high score

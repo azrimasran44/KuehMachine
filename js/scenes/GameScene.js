@@ -20,7 +20,7 @@ const CAR_HEIGHT = TILE * 0.55;
 // read wrong — live monster-lane hazards get their own, squarer footprint.
 const MONSTER_WIDTH = SPRITE_SIZE * 0.85;
 const MONSTER_HEIGHT = SPRITE_SIZE * 0.85;
-const DEATH_MONSTER_TEXTURES = ['angkukueh', 'ondehondeh'];
+const DEATH_MONSTER_TEXTURES = ['angkukueh', 'ondehondeh', 'kuehlapis'];
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
