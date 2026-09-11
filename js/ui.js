@@ -47,6 +47,52 @@ export function createPixelButton(scene, x, y, width, height, label, opts = {}) 
   return container;
 }
 
+// A compact square icon-button variant of createPixelButton — same
+// shadow-collapse press feedback, but an icon image instead of (or
+// alongside) a text label, for a horizontal row of small actions rather
+// than one full-width call-to-action.
+export function createIconButton(scene, x, y, size, iconKey, label, opts = {}) {
+  const {
+    fillColor = 0x2a2450,
+    textColor = '#fdf6ec',
+    shadowColor = 0x140f24,
+    iconScale = 0.5,
+    onClick = () => {},
+  } = opts;
+
+  const container = scene.add.container(x, y);
+
+  const shadow = scene.add.rectangle(BEVEL, BEVEL, size, size, shadowColor, 1);
+  const face = scene.add.rectangle(0, 0, size, size, fillColor, 1)
+    .setInteractive({ useHandCursor: true });
+  const icon = scene.add.image(0, 0, iconKey).setDisplaySize(size * iconScale, size * iconScale);
+
+  const movingParts = [face, icon];
+  container.add([shadow, face, icon]);
+
+  if (label) {
+    const text = scene.add.text(0, size / 2 + 14, label, {
+      fontFamily: "'Syne', sans-serif",
+      fontSize: '11px',
+      color: textColor,
+      align: 'center',
+    }).setOrigin(0.5);
+    container.add(text);
+    movingParts.push(text);
+  }
+
+  const atRest = movingParts.map((o) => ({ x: o.x, y: o.y }));
+  face.on('pointerdown', () => {
+    movingParts.forEach((o, i) => o.setPosition(atRest[i].x + BEVEL, atRest[i].y + BEVEL));
+    onClick();
+  });
+  const restore = () => movingParts.forEach((o, i) => o.setPosition(atRest[i].x, atRest[i].y));
+  face.on('pointerup', restore);
+  face.on('pointerout', restore);
+
+  return container;
+}
+
 // A semi-opaque rounded panel for the story dialogue box — the one place
 // in this project's UI that calls for a soft edge over the illustration
 // behind it, rather than the hard-edged bevel language everything else

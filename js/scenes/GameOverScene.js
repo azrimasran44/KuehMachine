@@ -1,5 +1,5 @@
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config.js';
-import { createPixelButton, PIXEL_FONT } from '../ui.js';
+import { createPixelButton, createIconButton, PIXEL_FONT } from '../ui.js';
 import { formatTime } from '../runTimer.js';
 import { isSignedIn } from '../progress.js';
 import { getSavedNicknameSync, saveNicknameSync, submitLeaderboardTimeIfBest } from '../leaderboard.js';
@@ -71,10 +71,12 @@ export default class GameOverScene extends Phaser.Scene {
       onClick: () => this.scene.start('Game', { level: 1 }),
     });
 
-    createPixelButton(this, cx, 578, 240, 48, 'UNLOCK CHARACTERS', {
-      fontSize: '13px',
-      fillColor: 0x2a2450,
-      textColor: COLORS.hudCream,
+    // Three icon buttons, evenly spaced, pinned near the bottom of the
+    // screen — a compact secondary-actions row below the main RETRY CTA.
+    const footerY = 700;
+    const iconSize = 56;
+
+    createIconButton(this, GAME_WIDTH / 6, footerY, iconSize, 'icon_characters', 'Characters', {
       // Passes this screen's own data through as returnTo — the shop
       // hands it straight back on its own Back button, so "come back
       // from browsing chefs" lands on the exact same result screen
@@ -82,21 +84,15 @@ export default class GameOverScene extends Phaser.Scene {
       onClick: () => this.scene.start('CharacterSelect', { returnTo: { result, timeMs, cause } }),
     });
 
-    const leaderboardBtn = this.add.text(cx, 612, 'VIEW LEADERBOARD', {
-      fontFamily: 'Syne, sans-serif',
-      fontSize: '13px',
-      color: COLORS.hudCream,
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    leaderboardBtn.on('pointerdown', () => this.scene.start('Leaderboard', {
-      returnTo: { scene: 'GameOver', data: { result, timeMs, cause, isNewBest } },
-    }));
+    createIconButton(this, GAME_WIDTH / 2, footerY, iconSize, 'icon_home', null, {
+      onClick: () => this.scene.start('Start'),
+    });
 
-    const menuBtn = this.add.text(cx, 640, 'BACK TO MENU', {
-      fontFamily: 'Syne, sans-serif',
-      fontSize: '13px',
-      color: '#8b84b0',
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    menuBtn.on('pointerdown', () => this.scene.start('Start'));
+    createIconButton(this, (GAME_WIDTH / 6) * 5, footerY, iconSize, 'icon_leaderboard', 'Scoreboard', {
+      onClick: () => this.scene.start('Leaderboard', {
+        returnTo: { scene: 'GameOver', data: { result, timeMs, cause, isNewBest } },
+      }),
+    });
 
     // A qualifying win (a genuine new best, while signed in) offers the
     // one-time nickname prompt before submitting to the public board —
