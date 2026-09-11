@@ -9,6 +9,7 @@ import LevelIntroScene from './scenes/LevelIntroScene.js';
 import PauseScene from './scenes/PauseScene.js';
 import GameOverScene from './scenes/GameOverScene.js';
 import CharacterSelectScene from './scenes/CharacterSelectScene.js';
+import LeaderboardScene from './scenes/LeaderboardScene.js';
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -25,7 +26,7 @@ const game = new Phaser.Game({
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
   },
-  scene: [BootScene, PreloadScene, StartScene, StoryScene, GameScene, LevelIntroScene, PauseScene, GameOverScene, CharacterSelectScene],
+  scene: [BootScene, PreloadScene, StartScene, StoryScene, GameScene, LevelIntroScene, PauseScene, GameOverScene, CharacterSelectScene, LeaderboardScene],
 });
 
 AudioManager.init(game);

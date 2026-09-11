@@ -1,5 +1,6 @@
 import { GAME_WIDTH, GAME_HEIGHT, SAFE_BOTTOM, COLORS } from '../config.js';
-import { getLocalHighScoreSync, getHighScore } from '../progress.js';
+import { getLocalBestTimeSync, getBestTime } from '../progress.js';
+import { formatTime } from '../runTimer.js';
 import { PIXEL_FONT } from '../ui.js';
 import { AudioManager, SFX_KEYS, MUSIC_KEYS } from '../audio.js';
 
@@ -58,12 +59,19 @@ export default class StartScene extends Phaser.Scene {
       .fillGradientStyle(0x0a0820, 0x0a0820, 0x0a0820, 0x0a0820, 0, 0, 0.7, 0.7)
       .fillRect(0, GAME_HEIGHT - 90, GAME_WIDTH, 90);
 
-    const scoreText = this.add.text(cx, 40, `BEST: ${getLocalHighScoreSync()}`, {
+    const scoreText = this.add.text(cx, 40, `BEST: ${formatTime(getLocalBestTimeSync())}`, {
       fontFamily: PIXEL_FONT,
       fontSize: '13px',
       color: COLORS.mint,
     }).setOrigin(0.5);
-    getHighScore().then((best) => scoreText.setText(`BEST: ${best}`));
+    getBestTime().then((best) => scoreText.setText(`BEST: ${formatTime(best)}`));
+
+    const leaderboardLink = this.add.text(cx, 58, 'LEADERBOARD ›', {
+      fontFamily: 'Syne, sans-serif',
+      fontSize: '11px',
+      color: '#cfc9e8',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    leaderboardLink.on('pointerdown', () => this.scene.start('Leaderboard', { returnTo: { scene: 'Start' } }));
 
     this.add.text(cx, Math.min(SAFE_BOTTOM, 800), 'by Azri — part of kuehmachine.com', {
       fontFamily: 'Syne, sans-serif',

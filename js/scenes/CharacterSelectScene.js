@@ -22,7 +22,7 @@ export default class CharacterSelectScene extends Phaser.Scene {
     // back on Back (and preserved across this scene's own restart() when
     // a card is tapped) — so "browse chefs, then come back" always lands
     // on the exact result screen the player left, not a blank default.
-    this.returnTo = data.returnTo ?? { result: 'lose', score: 0, cause: null };
+    this.returnTo = data.returnTo ?? { result: 'lose', timeMs: 0, cause: null };
 
     this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, COLORS.background, 1).setOrigin(0);
 

@@ -17,7 +17,6 @@ export default class LevelIntroScene extends Phaser.Scene {
 
   create(data) {
     this.level = data.level;
-    this.score = data.score;
     // Phaser reuses the same scene instance across restarts rather than
     // creating a fresh one — this flag (and any input listener below)
     // must be reset here, or the SECOND time this scene is ever visited
@@ -77,6 +76,6 @@ export default class LevelIntroScene extends Phaser.Scene {
   goToGame() {
     if (this.wentToGame) return;
     this.wentToGame = true;
-    this.scene.start('Game', { level: this.level, score: this.score });
+    this.scene.start('Game', { level: this.level });
   }
 }

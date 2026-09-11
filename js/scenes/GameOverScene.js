@@ -1,5 +1,9 @@
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config.js';
 import { createPixelButton, PIXEL_FONT } from '../ui.js';
+import { formatTime } from '../runTimer.js';
+import { isSignedIn } from '../progress.js';
+import { getSavedNicknameSync, saveNicknameSync, submitLeaderboardTimeIfBest } from '../leaderboard.js';
+import { promptForNickname } from '../nicknamePrompt.js';
 
 const CAR_TAUNTS = [
   'Come back, human! We haven’t had dessert yet!',
@@ -19,7 +23,7 @@ export default class GameOverScene extends Phaser.Scene {
   }
 
   create(data) {
-    const { result, score, cause } = data;
+    const { result, timeMs, cause, isNewBest } = data;
     const cx = GAME_WIDTH / 2;
     const won = result === 'win';
 
@@ -44,19 +48,27 @@ export default class GameOverScene extends Phaser.Scene {
       wordWrap: { width: 300 },
     }).setOrigin(0.5);
 
-    this.add.text(cx, 380, `ROWS CROSSED: ${score}`, {
+    this.add.text(cx, 370, `TIME: ${formatTime(timeMs)}`, {
       fontFamily: PIXEL_FONT,
       fontSize: '18px',
       color: COLORS.hudGold,
     }).setOrigin(0.5);
 
+    if (won && isNewBest) {
+      this.add.text(cx, 398, 'NEW BEST!', {
+        fontFamily: PIXEL_FONT,
+        fontSize: '13px',
+        color: COLORS.mint,
+      }).setOrigin(0.5);
+    }
+
     createPixelButton(this, cx, 500, 240, 68, 'RETRY', {
       fontSize: '26px',
-      // Explicit {level: 1, score: 0} rather than a bare scene.start('Game')
-      // — Phaser retains a scene's previous start-data when none is passed,
+      // Explicit {level: 1} rather than a bare scene.start('Game') —
+      // Phaser retains a scene's previous start-data when none is passed,
       // so omitting this would silently resume wherever the run left off
       // instead of actually restarting from Level 1.
-      onClick: () => this.scene.start('Game', { level: 1, score: 0 }),
+      onClick: () => this.scene.start('Game', { level: 1 }),
     });
 
     createPixelButton(this, cx, 578, 240, 48, 'UNLOCK CHARACTERS', {
@@ -67,8 +79,17 @@ export default class GameOverScene extends Phaser.Scene {
       // hands it straight back on its own Back button, so "come back
       // from browsing chefs" lands on the exact same result screen
       // rather than a blank/default one.
-      onClick: () => this.scene.start('CharacterSelect', { returnTo: { result, score, cause } }),
+      onClick: () => this.scene.start('CharacterSelect', { returnTo: { result, timeMs, cause } }),
     });
+
+    const leaderboardBtn = this.add.text(cx, 612, 'VIEW LEADERBOARD', {
+      fontFamily: 'Syne, sans-serif',
+      fontSize: '13px',
+      color: COLORS.hudCream,
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    leaderboardBtn.on('pointerdown', () => this.scene.start('Leaderboard', {
+      returnTo: { scene: 'GameOver', data: { result, timeMs, cause, isNewBest } },
+    }));
 
     const menuBtn = this.add.text(cx, 640, 'BACK TO MENU', {
       fontFamily: 'Syne, sans-serif',
@@ -76,5 +97,23 @@ export default class GameOverScene extends Phaser.Scene {
       color: '#8b84b0',
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     menuBtn.on('pointerdown', () => this.scene.start('Start'));
+
+    // A qualifying win (a genuine new best, while signed in) offers the
+    // one-time nickname prompt before submitting to the public board —
+    // fire-and-forget, same as every other remote call in this project;
+    // it never blocks the screen from being usable.
+    if (won && isNewBest && isSignedIn()) {
+      this.submitToLeaderboard(timeMs);
+    }
+  }
+
+  async submitToLeaderboard(timeMs) {
+    let nickname = getSavedNicknameSync();
+    if (!nickname) {
+      nickname = await promptForNickname();
+      if (!nickname) return; // skipped — no name saved, nothing submitted
+      saveNicknameSync(nickname);
+    }
+    submitLeaderboardTimeIfBest(nickname, timeMs);
   }
 }

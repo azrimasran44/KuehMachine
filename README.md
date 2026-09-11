@@ -30,7 +30,7 @@ Sound follows the same retro-arcade logic: every cue is a small synthesized chip
 - [x] Reach Level 1's goal to unlock the lab building, Level 2's to reach the staircase, Level 3's to reach the actual Kueh Machine and win; any death, at any level, restarts the whole run from Level 1 — instant one-thumb retry
 - [x] True full-screen canvas on phones; capped to a mobile-width column (not stretched full-width) on desktop browsers
 - [x] Pause (manual button + auto-pause when the tab loses focus), with a "3, 2, 1, GO!" countdown before play actually resumes
-- [x] High score, saved locally and synced to your kuehmachine.com account when signed in
+- [x] Scoring is your fastest completion time, not distance covered — a live in-run timer, a personal best saved locally and synced to your account when signed in, and a public leaderboard of the fastest times across every player (with a one-time nickname prompt on your first qualifying win), reachable from the Start Screen and the Game Over screen
 - [x] Full sound design — ambient hum + random electrical clicks on the Start Screen, a light story-sequence loop, an energetic gameplay track, a per-move "boink," a landing thud, and win/lose stingers, all synthesized chiptune-style; music crossfades between scenes, ducks (rather than cutting) under pauses and end-of-level jingles, and keeps playing gaplessly across all 3 levels without restarting
 - [x] Sparse Crossy-Road-style coins scattered along every level (never on a blocked cell, sometimes on a live hazard lane for a timing risk), with a running coin balance top-left in the HUD and a unique pickup chime; the balance persists across runs (and syncs to your kuehmachine.com account when signed in) and is spendable in a chef shop reachable from the Retry screen
 - [x] A roster of unlockable playable chefs, each with their own iconic kueh (Kueh Lapis, Kueh Dadar, Kueh Salat, Kueh Bingka, Pulut Hitam, Kueh Ambon) and all priced the same in coins — unlocking one equips them immediately, and whichever chef is equipped is who drops in at the start of your next run; a locked "???" Mystery Character teases a future addition
@@ -40,4 +40,3 @@ Sound follows the same retro-arcade logic: every cue is a small synthesized chip
 - The Mystery Character — currently a locked, non-interactive "coming soon" silhouette in the chef shop
 - More monster types beyond Ang Ku Kueh/Ondeh-Ondeh/Kueh Lapis, a boss, the ending cutscene
 - Haptics, reduced-motion mode
-- A public leaderboard instead of just a private high score

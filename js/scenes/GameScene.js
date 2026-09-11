@@ -7,7 +7,8 @@ import {
 } from '../config.js';
 import { InputManager } from '../input.js';
 import { LEVELS, getLevelConfig, buildLaneLayout, buildCoinLayout } from '../levels.js';
-import { reportScore } from '../progress.js';
+import { reportTime } from '../progress.js';
+import { RunTimer, formatTime } from '../runTimer.js';
 import { PIXEL_FONT } from '../ui.js';
 import { AudioManager, SFX_KEYS, MUSIC_KEYS } from '../audio.js';
 import { getCharacterConfig } from '../characters.js';
@@ -29,7 +30,6 @@ export default class GameScene extends Phaser.Scene {
 
   create(data = {}) {
     this.level = data.level ?? 1;
-    this.score = data.score ?? 0;
     this.levelConfig = getLevelConfig(this.level);
     this.rows = this.levelConfig.rows;
     this.startRow = this.rows - 1;
@@ -50,7 +50,6 @@ export default class GameScene extends Phaser.Scene {
 
     this.drawBoard();
     this.createPlayer();
-    this.furthestRow = this.player.row;
     this.setupHazardLanes();
     this.createHud();
 
@@ -83,6 +82,8 @@ export default class GameScene extends Phaser.Scene {
 
   update(time, delta) {
     if (this.gameEnded) return;
+
+    this.timeText.setText(formatTime(RunTimer.elapsedMs()));
 
     this.updateHazards(delta);
     // No collision checking while Leonard's still dropping in — he's
@@ -179,14 +180,14 @@ export default class GameScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(HUD_DEPTH - 1);
 
-    this.add.text(20, SAFE_TOP - 18, 'SCORE', {
+    this.add.text(20, SAFE_TOP - 18, 'TIME', {
       fontFamily: 'Syne, sans-serif',
       fontSize: '11px',
       color: '#8b84b0',
       letterSpacing: 2,
     }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(HUD_DEPTH);
 
-    this.scoreText = this.add.text(20, SAFE_TOP + 12, `${this.score}`, {
+    this.timeText = this.add.text(20, SAFE_TOP + 12, formatTime(RunTimer.elapsedMs()), {
       fontFamily: PIXEL_FONT,
       fontSize: '26px',
       color: COLORS.hudGold,
@@ -607,6 +608,10 @@ export default class GameScene extends Phaser.Scene {
       // not from scene start.
       this.hasMoved = true;
       this.gameplayStartAt = this.time.now;
+      // The run's clock covers the whole 3-level run, not one level, so it
+      // only ever starts on Level 1's first move — Levels 2-3 inherit the
+      // already-running RunTimer untouched.
+      if (this.level === 1) RunTimer.start();
       this.dismissGraceHint();
     }
 
@@ -641,13 +646,6 @@ export default class GameScene extends Phaser.Scene {
 
   onPlayerMoveComplete() {
     if (this.gameEnded) return;
-
-    if (this.player.row < this.furthestRow) {
-      this.score += this.furthestRow - this.player.row;
-      this.furthestRow = this.player.row;
-      this.scoreText.setText(`${this.score}`);
-    }
-
     if (this.player.row === GOAL_ROW) this.reachGoal();
   }
 
@@ -663,14 +661,19 @@ export default class GameScene extends Phaser.Scene {
     // replay); the true Level-3 win never makes that call again, so the
     // bed stays softly audible under "YOU MADE IT!" rather than dying.
     AudioManager.duckMusic({ to: 0.25, fadeMs: 250 });
-    reportScore(this.score);
     this.cameras.main.flash(300, 56, 211, 159);
     if (this.level < LEVELS.length) {
       this.time.delayedCall(500, () =>
-        this.scene.start('LevelIntro', { level: this.level + 1, score: this.score }));
+        this.scene.start('LevelIntro', { level: this.level + 1 }));
     } else {
-      this.time.delayedCall(500, () =>
-        this.scene.start('GameOver', { result: 'win', score: this.score }));
+      // The run's clock stops the instant the true final goal is reached,
+      // not 500ms later when the scene actually transitions — the flash/
+      // delay below is presentation, it shouldn't pad the recorded time.
+      const timeMs = RunTimer.stop();
+      reportTime(timeMs).then(({ isNewBest }) => {
+        this.time.delayedCall(500, () =>
+          this.scene.start('GameOver', { result: 'win', timeMs, isNewBest }));
+      });
     }
   }
 
@@ -692,13 +695,17 @@ export default class GameScene extends Phaser.Scene {
     if (cause !== 'caught' && !skipImpactFx) {
       this.flashHazardHit();
     }
-    reportScore(this.score);
-    this.time.delayedCall(450, () => this.scene.start('GameOver', { result: 'lose', score: this.score, cause }));
+    // A loss never reports to the best-time/leaderboard — an incomplete
+    // run has no meaningful finish time. The elapsed time still shown on
+    // Game Over is flavour only.
+    const timeMs = RunTimer.elapsedMs();
+    this.time.delayedCall(450, () => this.scene.start('GameOver', { result: 'lose', timeMs, cause }));
   }
 
   pauseGame() {
     if (this.gameEnded || this.isPaused) return;
     this.isPaused = true;
+    RunTimer.pause();
     AudioManager.duckMusic({ to: 0.12 });
     this.scene.pause();
     this.scene.launch('Pause', { gameScene: this });
@@ -706,6 +713,7 @@ export default class GameScene extends Phaser.Scene {
 
   resumeGame() {
     this.isPaused = false;
+    RunTimer.resume();
     AudioManager.unduckMusic();
     this.scene.resume();
   }

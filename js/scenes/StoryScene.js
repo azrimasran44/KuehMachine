@@ -139,6 +139,6 @@ export default class StoryScene extends Phaser.Scene {
     // stale level/score left over from an earlier run (e.g. after
     // GameOver's "BACK TO MENU" then replaying the story) instead of
     // actually starting fresh.
-    this.scene.start('Game', { level: 1, score: 0 });
+    this.scene.start('Game', { level: 1 });
   }
 }

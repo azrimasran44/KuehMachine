@@ -27,3 +27,31 @@ create policy "update own progress"
   on kueh_hdb_panic_progress for update
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- Public fastest-time leaderboard — a separate table from the private
+-- progress row above, per DATABASE.md's Private/Public split. One row per
+-- player (their personal best), publicly readable by anyone so the board
+-- can be shown to signed-out visitors too; writable only by the row's own
+-- owner, same auth.uid() pattern as every other table here.
+
+create table if not exists kueh_hdb_panic_leaderboard (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  display_name text not null,
+  best_time_ms integer not null,
+  achieved_at timestamptz not null default now()
+);
+
+alter table kueh_hdb_panic_leaderboard enable row level security;
+
+create policy "select all leaderboard entries"
+  on kueh_hdb_panic_leaderboard for select
+  using (true);
+
+create policy "insert own leaderboard entry"
+  on kueh_hdb_panic_leaderboard for insert
+  with check (auth.uid() = user_id);
+
+create policy "update own leaderboard entry"
+  on kueh_hdb_panic_leaderboard for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

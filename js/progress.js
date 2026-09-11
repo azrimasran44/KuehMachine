@@ -5,19 +5,22 @@
 // block or break gameplay — localStorage is always the source of truth
 // that the game itself reads from; Supabase is a sync layer on top.
 
-const LOCAL_KEY = 'kueh-hdb-panic-high-score';
+// Named/keyed for time (ms), not the old rows-crossed score — a clean
+// break rather than reusing the old key, so a leftover integer from
+// before this rename can never get misread as a millisecond time.
+const LOCAL_KEY = 'kueh-hdb-panic-best-time-ms';
 const TABLE = 'kueh_hdb_panic_progress';
 
-function peekLocalHighScore() {
+function peekLocalBestTime() {
   const v = parseInt(localStorage.getItem(LOCAL_KEY) || '0', 10);
   return Number.isFinite(v) ? v : 0;
 }
 
-function saveLocalHighScore(score) {
+function saveLocalBestTime(timeMs) {
   try {
-    localStorage.setItem(LOCAL_KEY, String(score));
+    localStorage.setItem(LOCAL_KEY, String(timeMs));
   } catch (_) {
-    // Storage disabled/full — local score just won't persist across reloads.
+    // Storage disabled/full — local best just won't persist across reloads.
   }
 }
 
@@ -83,27 +86,33 @@ export function isSignedIn() {
   return !!(window.KuehAccount && window.KuehAccount.getUser());
 }
 
-export function getLocalHighScoreSync() {
-  return peekLocalHighScore();
+export function getLocalBestTimeSync() {
+  return peekLocalBestTime();
 }
 
-export async function getHighScore() {
-  const local = peekLocalHighScore();
+export async function getBestTime() {
+  const local = peekLocalBestTime();
   const remote = await fetchRemoteData();
-  const remoteScore = remote?.high_score ?? null;
-  if (remoteScore != null && remoteScore > local) {
-    saveLocalHighScore(remoteScore);
-    return remoteScore;
+  const remoteBest = remote?.best_time_ms ?? null;
+  // 0 means "no time recorded yet" locally — a real remote best always wins
+  // in that case regardless of its value.
+  if (remoteBest != null && (local === 0 || remoteBest < local)) {
+    saveLocalBestTime(remoteBest);
+    return remoteBest;
   }
   return local;
 }
 
-export async function reportScore(score) {
-  const current = peekLocalHighScore();
-  if (score > current) {
-    saveLocalHighScore(score);
-    pushRemoteData({ high_score: score, last_played: new Date().toISOString() });
-    return score;
+// Lower is better here — a faster finish beats the current best, not a
+// bigger number. Returns whether this run actually improved it, so
+// callers (the win screen, the leaderboard-submit flow) can branch on
+// "is this genuinely a new personal best" without re-deriving it.
+export async function reportTime(timeMs) {
+  const current = peekLocalBestTime();
+  if (current === 0 || timeMs < current) {
+    saveLocalBestTime(timeMs);
+    pushRemoteData({ best_time_ms: timeMs, last_played: new Date().toISOString() });
+    return { isNewBest: true, best: timeMs };
   }
-  return current;
+  return { isNewBest: false, best: current };
 }
