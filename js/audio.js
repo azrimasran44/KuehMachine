@@ -22,6 +22,8 @@ export const SFX_KEYS = {
   THUNDER: 'sfx-thunder',
   TEXT_BLIP: 'sfx-textblip',
   COIN: 'sfx-coin',
+  HORN: 'sfx-horn',
+  ENGINE: 'sfx-engine',
 };
 
 export const MUSIC_KEYS = {
@@ -40,6 +42,8 @@ export const AUDIO_MANIFEST = [
   { key: SFX_KEYS.THUNDER, url: 'assets/audio/sfx-thunder.wav' },
   { key: SFX_KEYS.TEXT_BLIP, url: 'assets/audio/sfx-textblip.wav' },
   { key: SFX_KEYS.COIN, url: 'assets/audio/sfx-coin.wav' },
+  { key: SFX_KEYS.HORN, url: 'assets/audio/sfx-horn.wav' },
+  { key: SFX_KEYS.ENGINE, url: 'assets/audio/sfx-engine.wav' },
   { key: MUSIC_KEYS.START_AMBIENT, url: 'assets/audio/music-start-ambient.wav' },
   { key: MUSIC_KEYS.STORY, url: 'assets/audio/music-story.wav' },
   { key: MUSIC_KEYS.GAMEPLAY, url: 'assets/audio/music-gameplay.wav' },

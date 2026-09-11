@@ -1,9 +1,11 @@
 import { COLS } from './config.js';
 
 // Every crossing row in a level is EXACTLY one of:
-//   'traffic'  — Level 1 only, cars (today's buildCarLanes, parameterized)
+//   'traffic'  — Level 1, cars (today's buildCarLanes, parameterized)
 //   'monster'  — Levels 2-3, a horizontal hazard lane, obstacle-free
-//   'obstacle' — Levels 2-3, static props, hazard-free
+//   'obstacle' — any level, static props, hazard-free (Level 1's grass
+//                pathway strips reuse this exact same row type, just with
+//                tree/bush props instead of office furniture)
 // Never both, never neither — see buildLaneLayout() below.
 
 export const LEVELS = [
@@ -19,6 +21,12 @@ export const LEVELS = [
     hazardSpeedSlow: 60,
     hazardSpeedFast: 125,
     coinChance: 0.2,
+    // Roads come in clusters of 2-3 lanes separated by a safe grass
+    // pathway (trees/bushes), Crossy-Road-style, rather than every row
+    // being traffic.
+    pathTexture: 'grass',
+    obstacleDensity: 0.35,
+    obstacleTypes: ['tree', 'bush'],
   },
   {
     id: 2,
@@ -72,27 +80,37 @@ export function buildLaneLayout(levelConfig) {
   return lanes;
 }
 
-// Level 1's original buildCarLanes() logic, parameterized instead of
-// reading ROWS/CAR_SPEED_SLOW/CAR_SPEED_FAST off config.js directly, so
-// this module is the single source of truth for level-specific tuning.
-// Direction alternates by row parity; speed/density both ramp up the
-// closer a lane is to the goal, same rhythm as before.
+// Roads in clusters of 2-3 lanes, each cluster followed by one safe grass
+// pathway row (built via buildObstacleLane, same as Levels 2-3's static
+// prop rows, just with tree/bush props) — matching how a real street
+// alternates traffic with a median/verge, rather than every row being a
+// car lane back to back. Direction alternates by absolute row parity;
+// speed/density still ramp up the closer a lane is to the goal, same
+// rhythm as before.
 function buildTrafficLanes(crossingRows, levelConfig) {
   const lanes = [];
-  for (let i = 1; i <= crossingRows; i++) {
-    const dir = i % 2 === 0 ? 1 : -1;
-    const progress = (crossingRows - i) / (crossingRows - 1);
-    const isFast = i % 3 === 0 || progress > 0.7;
-    const baseGap = isFast ? 4200 : 6200;
-    const spawnGapMs = Math.max(1800, baseGap - progress * 2600);
-    lanes.push({
-      row: i,
-      type: 'traffic',
-      dir,
-      speed: isFast ? levelConfig.hazardSpeedFast : levelConfig.hazardSpeedSlow,
-      spawnGapMs,
-      isFast,
-    });
+  let row = 1;
+  while (row <= crossingRows) {
+    const clusterSize = Phaser.Math.Between(2, 3);
+    for (let n = 0; n < clusterSize && row <= crossingRows; n++, row++) {
+      const dir = row % 2 === 0 ? 1 : -1;
+      const progress = (crossingRows - row) / (crossingRows - 1);
+      const isFast = row % 3 === 0 || progress > 0.7;
+      const baseGap = isFast ? 4200 : 6200;
+      const spawnGapMs = Math.max(1800, baseGap - progress * 2600);
+      lanes.push({
+        row,
+        type: 'traffic',
+        dir,
+        speed: isFast ? levelConfig.hazardSpeedFast : levelConfig.hazardSpeedSlow,
+        spawnGapMs,
+        isFast,
+      });
+    }
+    if (row <= crossingRows) {
+      lanes.push(buildObstacleLane(row, levelConfig));
+      row++;
+    }
   }
   return lanes;
 }

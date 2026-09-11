@@ -92,6 +92,7 @@ export default class GameScene extends Phaser.Scene {
     if (!this.isLanding) {
       this.checkHazardCollision();
       if (this.gameEnded) return;
+      this.checkCarProximity();
     }
 
     if (this.hasMoved) {
@@ -114,14 +115,21 @@ export default class GameScene extends Phaser.Scene {
       const isGoalOrStart = r === GOAL_ROW || r === this.startRow;
 
       if (!isGoalOrStart) {
-        // The road/office-floor texture already reads as its own
-        // material — tinting it the way the plain start/goal tile is
-        // tinted would muddy that, so it's left untinted except to mark
-        // a live monster lane (see monsterLaneTint below), the one thing
-        // that needs to read at a glance in Levels 2-3 where every
-        // crossing row shares the same office_tile texture.
-        this.add.tileSprite(0, y, GAME_WIDTH, TILE, this.levelConfig.hazardTexture).setOrigin(0, 0);
         const lane = this.laneLayout.find((l) => l.row === r);
+        // A static prop row (Level 1's grass pathway strips, or Levels
+        // 2-3's furniture rows) uses its own floor texture when the level
+        // defines one — Level 1's pathTexture reads as a distinct safe
+        // verge rather than more road. Everything else (traffic/monster
+        // lanes) already reads as its own material — tinting it the way
+        // the plain start/goal tile is tinted would muddy that, so it's
+        // left untinted except to mark a live monster lane (see
+        // monsterLaneOverlay below), the one thing that needs to read at
+        // a glance in Levels 2-3 where every hazard row shares the same
+        // office_tile texture.
+        const rowTexture = lane?.type === 'obstacle'
+          ? (this.levelConfig.pathTexture ?? this.levelConfig.hazardTexture)
+          : this.levelConfig.hazardTexture;
+        this.add.tileSprite(0, y, GAME_WIDTH, TILE, rowTexture).setOrigin(0, 0);
         if (lane && lane.type === 'monster') {
           this.add.rectangle(0, y, GAME_WIDTH, TILE, COLORS.monsterLaneOverlay, 0.14).setOrigin(0, 0);
         }
@@ -382,7 +390,16 @@ export default class GameScene extends Phaser.Scene {
     sprite.setDisplaySize(w, h);
     sprite.setFlipX(lane.dir === -1);
     if (isTraffic) sprite.setTint(lane.isFast ? 0xffb0a8 : 0xbfe8ff);
-    this.hazards.push({ sprite, dir: lane.dir, speed: lane.speed, halfW: w * 0.4, halfH: h * 0.4 });
+    this.hazards.push({
+      sprite, dir: lane.dir, speed: lane.speed, halfW: w * 0.4, halfH: h * 0.4,
+      isTraffic, honked: false,
+    });
+    // A fast car announces itself as it enters — a one-shot "vroom"
+    // rather than a sustained loop per car, which would get messy with
+    // several cars on screen at once.
+    if (isTraffic && lane.isFast) {
+      AudioManager.playSfx(SFX_KEYS.ENGINE, { volume: 0.35, rate: Phaser.Math.FloatBetween(0.95, 1.08) });
+    }
   }
 
   updateHazards(delta) {
@@ -409,6 +426,27 @@ export default class GameScene extends Phaser.Scene {
       if (Math.abs(px - hazard.sprite.x) < hazard.halfW + hitHalf && Math.abs(py - hazard.sprite.y) < hazard.halfH + hitHalf) {
         this.killByHazard();
         return;
+      }
+    }
+  }
+
+  // A car (never a monster — this is specifically "traffic noise") honks
+  // once as it closes in on the player's own lane, a beat before it's
+  // actually close enough to be dangerous — an early warning cue, not a
+  // hazard-detection duplicate. `honked` latches per car so it only
+  // sounds once per approach, not every frame it stays close.
+  checkCarProximity() {
+    const px = this.player.container.x;
+    const py = this.player.container.y;
+
+    for (const hazard of this.hazards) {
+      if (!hazard.isTraffic || hazard.honked) continue;
+      const sameLane = Math.abs(py - hazard.sprite.y) < TILE * 0.5;
+      if (!sameLane) continue;
+      const dx = Math.abs(px - hazard.sprite.x);
+      if (dx < TILE * 2.5 && dx > hazard.halfW) {
+        hazard.honked = true;
+        AudioManager.playSfx(SFX_KEYS.HORN, { volume: 0.4 });
       }
     }
   }
