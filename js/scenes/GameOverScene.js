@@ -71,17 +71,22 @@ export default class GameOverScene extends Phaser.Scene {
       onClick: () => this.scene.start('Game', { level: 1 }),
     });
 
-    // Three actions, evenly spaced, pinned near the bottom of the screen —
-    // a compact secondary-actions row below the main RETRY CTA. Home keeps
+    // Three actions, full width, pinned near the bottom of the screen — a
+    // compact secondary-actions row below the main RETRY CTA. Home keeps
     // its icon button; Characters/Scoreboard are secondary filled buttons
     // (same dark fill/cream text language as the old UNLOCK CHARACTERS
-    // button), same horizontal alignment as Home.
+    // button). All three share one row width, edge to edge with a 16px
+    // gap between each, rather than floating with uneven gaps between them.
     const footerY = 700;
-    const iconSize = 56;
-    const sideButtonWidth = 120;
-    const sideButtonHeight = 48;
+    const footerMargin = 20;
+    const footerGap = 16;
+    const footerHeight = 56;
+    const footerButtonWidth = (GAME_WIDTH - footerMargin * 2 - footerGap * 2) / 3;
+    const footerX1 = footerMargin + footerButtonWidth / 2;
+    const footerX2 = footerX1 + footerButtonWidth + footerGap;
+    const footerX3 = footerX2 + footerButtonWidth + footerGap;
 
-    createPixelButton(this, GAME_WIDTH / 6, footerY, sideButtonWidth, sideButtonHeight, 'Characters', {
+    createPixelButton(this, footerX1, footerY, footerButtonWidth, footerHeight, 'Characters', {
       fontSize: '13px',
       fillColor: 0x2a2450,
       textColor: COLORS.hudCream,
@@ -92,11 +97,11 @@ export default class GameOverScene extends Phaser.Scene {
       onClick: () => this.scene.start('CharacterSelect', { returnTo: { result, timeMs, cause } }),
     });
 
-    createIconButton(this, GAME_WIDTH / 2, footerY, iconSize, 'icon_home', null, {
+    createIconButton(this, footerX2, footerY, footerButtonWidth, footerHeight, 'icon_home', null, {
       onClick: () => this.scene.start('Start'),
     });
 
-    createPixelButton(this, (GAME_WIDTH / 6) * 5, footerY, sideButtonWidth, sideButtonHeight, 'Scoreboard', {
+    createPixelButton(this, footerX3, footerY, footerButtonWidth, footerHeight, 'Scoreboard', {
       fontSize: '13px',
       fillColor: 0x2a2450,
       textColor: COLORS.hudCream,

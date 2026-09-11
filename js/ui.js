@@ -51,7 +51,7 @@ export function createPixelButton(scene, x, y, width, height, label, opts = {}) 
 // shadow-collapse press feedback, but an icon image instead of (or
 // alongside) a text label, for a horizontal row of small actions rather
 // than one full-width call-to-action.
-export function createIconButton(scene, x, y, size, iconKey, label, opts = {}) {
+export function createIconButton(scene, x, y, width, height, iconKey, label, opts = {}) {
   const {
     fillColor = 0x2a2450,
     textColor = '#fdf6ec',
@@ -62,16 +62,17 @@ export function createIconButton(scene, x, y, size, iconKey, label, opts = {}) {
 
   const container = scene.add.container(x, y);
 
-  const shadow = scene.add.rectangle(BEVEL, BEVEL, size, size, shadowColor, 1);
-  const face = scene.add.rectangle(0, 0, size, size, fillColor, 1)
+  const shadow = scene.add.rectangle(BEVEL, BEVEL, width, height, shadowColor, 1);
+  const face = scene.add.rectangle(0, 0, width, height, fillColor, 1)
     .setInteractive({ useHandCursor: true });
-  const icon = scene.add.image(0, 0, iconKey).setDisplaySize(size * iconScale, size * iconScale);
+  const iconSize = Math.min(width, height) * iconScale;
+  const icon = scene.add.image(0, 0, iconKey).setDisplaySize(iconSize, iconSize);
 
   const movingParts = [face, icon];
   container.add([shadow, face, icon]);
 
   if (label) {
-    const text = scene.add.text(0, size / 2 + 14, label, {
+    const text = scene.add.text(0, height / 2 + 14, label, {
       fontFamily: "'Syne', sans-serif",
       fontSize: '11px',
       color: textColor,

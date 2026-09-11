@@ -23,7 +23,7 @@ export default class StoryScene extends Phaser.Scene {
   create() {
     this.pageIndex = 0;
 
-    AudioManager.playMusic(MUSIC_KEYS.STORY, { volume: 0.35, fadeMs: 600 });
+    AudioManager.playMusic(MUSIC_KEYS.THEME_SONG, { volume: 0.3, fadeMs: 600 });
 
     // Tapping anywhere advances — attached to the background itself so
     // Phaser's own hit-testing naturally routes a tap on the Skip button

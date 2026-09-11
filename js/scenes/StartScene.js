@@ -120,7 +120,7 @@ export default class StartScene extends Phaser.Scene {
       if (begun) return;
       begun = true;
 
-      const startAmbience = () => AudioManager.playMusic(MUSIC_KEYS.START_AMBIENT, { volume: 0.18, fadeMs: 150 });
+      const startAmbience = () => AudioManager.playMusic(MUSIC_KEYS.THEME_SONG, { volume: 0.3, fadeMs: 150 });
       // Poking context.state/resume() directly raced Phaser's own unlock
       // bookkeeping — this is Phaser's documented pattern instead: sounds
       // played while `locked` is true can silently go nowhere, so wait for

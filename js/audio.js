@@ -25,8 +25,11 @@ export const SFX_KEYS = {
 };
 
 export const MUSIC_KEYS = {
-  START_AMBIENT: 'music-start-ambient',
-  STORY: 'music-story',
+  // One shared track for the Start Screen and the story sequence — using
+  // the same key for both means AudioManager.playMusic's same-key no-op
+  // (see below) lets it keep playing gaplessly across that transition
+  // instead of restarting or crossfading into itself.
+  THEME_SONG: 'music-theme-song',
   GAMEPLAY: 'music-gameplay',
 };
 
@@ -40,8 +43,7 @@ export const AUDIO_MANIFEST = [
   { key: SFX_KEYS.THUNDER, url: 'assets/audio/sfx-thunder.wav' },
   { key: SFX_KEYS.TEXT_BLIP, url: 'assets/audio/sfx-textblip.wav' },
   { key: SFX_KEYS.COIN, url: 'assets/audio/sfx-coin.wav' },
-  { key: MUSIC_KEYS.START_AMBIENT, url: 'assets/audio/music-start-ambient.wav' },
-  { key: MUSIC_KEYS.STORY, url: 'assets/audio/music-story.wav' },
+  { key: MUSIC_KEYS.THEME_SONG, url: 'assets/audio/song-bg.m4a' },
   { key: MUSIC_KEYS.GAMEPLAY, url: 'assets/audio/music-gameplay.wav' },
 ];
 
