@@ -422,6 +422,15 @@ export default class GameScene extends Phaser.Scene {
 
   killByHazard() {
     this.gameEnded = true;
+    if (this.level === 1) {
+      this.playEagleGrab();
+    } else {
+      this.playMonsterLunge();
+    }
+  }
+
+  // Levels 2-3 ("in the building"): the original kueh-monster lunge.
+  playMonsterLunge() {
     const monsterRow = this.player.row + 1;
     const monster = this.spawnDeathMonster(this.player.col, monsterRow);
     this.tweens.add({
@@ -440,6 +449,46 @@ export default class GameScene extends Phaser.Scene {
     monster.setDisplaySize(SPRITE_SIZE, SPRITE_SIZE);
     monster.setDepth(500);
     return monster;
+  }
+
+  // Level 1 ("crossing the road"): an eagle swoops in, grabs the player,
+  // and carries them off the top of the screen instead of a monster lunge.
+  playEagleGrab() {
+    const px = this.player.container.x;
+    const py = this.player.container.y;
+    const eagleSize = SPRITE_SIZE * 1.7;
+    // Swoops in from whichever side, at random, so it doesn't always read
+    // identically — the carry-off continues in the opposite direction.
+    const fromRight = Phaser.Math.Between(0, 1) === 1;
+    const startX = px + (fromRight ? 1 : -1) * SPRITE_SIZE * 2.5;
+    const startY = py - SPRITE_SIZE * 3;
+    const grabY = py - SPRITE_SIZE * 0.1;
+
+    const eagle = this.add.image(startX, startY, 'eagle');
+    eagle.setDisplaySize(eagleSize, eagleSize);
+    eagle.setDepth(500);
+    eagle.setFlipX(fromRight);
+
+    this.tweens.add({
+      targets: eagle,
+      x: px,
+      y: grabY,
+      duration: 220,
+      ease: 'Quad.easeIn',
+      onComplete: () => {
+        eagle.setPosition(px, grabY);
+        const exitX = px + (fromRight ? -1 : 1) * SPRITE_SIZE * 6;
+        const exitY = this.cameras.main.scrollY - SPRITE_SIZE * 3;
+        this.tweens.add({
+          targets: [eagle, this.player.container],
+          x: exitX,
+          y: exitY,
+          duration: 550,
+          ease: 'Quad.easeIn',
+          onComplete: () => this.finishLose('hazard'),
+        });
+      },
+    });
   }
 
   // --- environment auto-advance -----------------------------------------

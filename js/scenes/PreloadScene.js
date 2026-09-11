@@ -31,6 +31,7 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image('char_viki', 'assets/sprites/char_viki.png');
     this.load.image('char_ken', 'assets/sprites/char_ken.png');
     this.load.image('char_mystery', 'assets/sprites/char_mystery.png');
+    this.load.image('eagle', 'assets/sprites/eagle.png');
 
     this.load.video('heroVideo', 'assets/sprites/hero.mp4');
     this.load.image('beat1', 'assets/sprites/beat1.png');
