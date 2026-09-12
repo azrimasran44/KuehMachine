@@ -247,12 +247,10 @@ export default class GameScene extends Phaser.Scene {
     // Stays up until the player actually moves rather than fading on a
     // fixed timer — nothing else starts happening until then either, so
     // there's no rush to read it. Centered on screen (not tucked under the
-    // HUD) and bold enough to actually be read at a glance; the wording
-    // itself depends on whether this device has touch input at all,
-    // rather than screen size (a touch-capable laptop still swipes fine).
-    const isTouch = this.sys.game.device.input.touch;
-    const label = isTouch ? 'TAP TO MOVE' : 'SWIPE OR ARROW KEYS TO MOVE';
-    this.graceHint = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, label, {
+    // HUD) and bold enough to actually be read at a glance. One unified
+    // message covers every input method (tap, swipe, and arrow keys all
+    // still work regardless of what's shown here).
+    this.graceHint = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'TAP OR USE ARROW KEYS TO MOVE', {
       fontFamily: PIXEL_FONT,
       fontSize: '17px',
       color: COLORS.hudCream,
