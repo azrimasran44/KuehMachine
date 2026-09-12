@@ -33,10 +33,16 @@ export class InputManager {
   attachSwipe(scene) {
     let start = null;
     let fired = false;
+    let startedOnUI = false;
 
     scene.input.on('pointerdown', (pointer) => {
       start = { x: pointer.x, y: pointer.y };
       fired = false;
+      // A tap that lands on an interactive UI element (the pause button,
+      // say) shouldn't also register as a forward move — hitTestPointer
+      // tells us whether anything interactive is under the pointer right
+      // now, before any drag has happened.
+      startedOnUI = scene.input.hitTestPointer(pointer).length > 0;
     });
 
     scene.input.on('pointermove', (pointer) => {
@@ -55,8 +61,14 @@ export class InputManager {
     });
 
     scene.input.on('pointerup', () => {
+      // No swipe threshold was crossed and the tap didn't start on a UI
+      // element — a plain tap on the board, treated as "move forward".
+      if (start && !fired && !startedOnUI) {
+        this.enqueue('up');
+      }
       start = null;
       fired = false;
+      startedOnUI = false;
     });
   }
 }

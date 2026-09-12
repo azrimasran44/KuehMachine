@@ -1,4 +1,4 @@
-import { GAME_WIDTH, GAME_HEIGHT, SAFE_BOTTOM, COLORS } from '../config.js';
+import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config.js';
 import { getLocalBestTimeSync, getBestTime } from '../progress.js';
 import { formatTime } from '../runTimer.js';
 import { PIXEL_FONT } from '../ui.js';
@@ -72,12 +72,6 @@ export default class StartScene extends Phaser.Scene {
       color: '#cfc9e8',
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     leaderboardLink.on('pointerdown', () => this.scene.start('Leaderboard', { returnTo: { scene: 'Start' } }));
-
-    this.add.text(cx, Math.min(SAFE_BOTTOM, 800), 'by Azri — part of kuehmachine.com', {
-      fontFamily: 'Syne, sans-serif',
-      fontSize: '11px',
-      color: '#5b5480',
-    }).setOrigin(0.5);
 
     // Sparse, irregular electrical clicks and a soft periodic pulse,
     // matching the lightning/rooftop-machine mood — random rather than

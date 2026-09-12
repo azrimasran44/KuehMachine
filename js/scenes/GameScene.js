@@ -246,23 +246,34 @@ export default class GameScene extends Phaser.Scene {
   createGraceHint(depth) {
     // Stays up until the player actually moves rather than fading on a
     // fixed timer — nothing else starts happening until then either, so
-    // there's no rush to read it.
-    this.graceHint = this.add.text(GAME_WIDTH / 2, SAFE_TOP + 95, 'SWIPE OR ARROW KEYS TO MOVE', {
-      fontFamily: 'Syne, sans-serif',
-      fontSize: '12px',
-      color: '#cfc9e8',
-      letterSpacing: 1,
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(depth).setAlpha(0.85);
+    // there's no rush to read it. Centered on screen (not tucked under the
+    // HUD) and bold enough to actually be read at a glance; the wording
+    // itself depends on whether this device has touch input at all,
+    // rather than screen size (a touch-capable laptop still swipes fine).
+    const isTouch = this.sys.game.device.input.touch;
+    const label = isTouch ? 'TAP TO MOVE' : 'SWIPE OR ARROW KEYS TO MOVE';
+    this.graceHint = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, label, {
+      fontFamily: PIXEL_FONT,
+      fontSize: '17px',
+      color: COLORS.hudCream,
+      align: 'center',
+      letterSpacing: 2,
+      stroke: '#0a0820',
+      strokeThickness: 4,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(depth);
   }
 
   dismissGraceHint() {
     if (!this.graceHint) return;
     const hint = this.graceHint;
     this.graceHint = null;
+    // A slow, deliberate fade — the hint has already done its job the
+    // moment the player moves, so it recedes rather than snapping off.
     this.tweens.add({
       targets: hint,
       alpha: 0,
-      duration: 400,
+      duration: 900,
+      ease: 'Sine.easeOut',
       onComplete: () => hint.destroy(),
     });
   }
